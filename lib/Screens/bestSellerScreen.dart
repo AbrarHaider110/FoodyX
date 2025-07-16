@@ -74,12 +74,13 @@ class bestSellerScreen extends StatelessWidget {
 
     double screenHeight = MediaQuery.of(context).size.height;
     double screenWidth = MediaQuery.of(context).size.width;
+    Orientation orientation = MediaQuery.of(context).orientation;
 
     return Scaffold(
       body: Stack(
         children: [
           Container(
-            color: const Color(0xFFF5CB58),
+            color: const Color(0xFF00D09E),
             width: screenWidth,
             height: screenHeight,
           ),
@@ -122,7 +123,7 @@ class bestSellerScreen extends StatelessWidget {
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: 17,
-                          color: Color(0xFFE95322),
+                          color: Color(0xFF00D09E),
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -131,13 +132,13 @@ class bestSellerScreen extends StatelessWidget {
                         itemCount: displayImages.length,
                         shrinkWrap: true,
                         physics: const NeverScrollableScrollPhysics(),
-                        gridDelegate:
-                            const SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 2,
-                              crossAxisSpacing: 12,
-                              mainAxisSpacing: 12,
-                              childAspectRatio: 0.65,
-                            ),
+                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount:
+                              orientation == Orientation.portrait ? 2 : 4,
+                          crossAxisSpacing: 12,
+                          mainAxisSpacing: 12,
+                          childAspectRatio: 0.65,
+                        ),
                         itemBuilder: (context, index) {
                           return _buildContainer(
                             displayImages[index][0],
@@ -204,7 +205,7 @@ class bestSellerScreen extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Image.asset(iconPath, width: 30, height: 30),
-                    const Icon(Icons.favorite, color: Colors.red),
+                    const Icon(Icons.favorite, color: Color(0xFFE95322)),
                   ],
                 ),
               ),
@@ -217,7 +218,7 @@ class bestSellerScreen extends StatelessWidget {
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFE95322),
+                    color: Color(0xFF00D09E),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
@@ -248,13 +249,13 @@ class bestSellerScreen extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 3),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFE95322),
+                  color: Color(0xFF00D09E),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.star, color: Colors.yellow, size: 10),
+                    const Icon(Icons.star, color: Color(0xFFFFD700), size: 10),
                     const SizedBox(width: 4),
                     Text(
                       rating,
@@ -281,7 +282,7 @@ class bestSellerScreen extends StatelessWidget {
                 ),
               ),
               CircleAvatar(
-                backgroundColor: const Color(0xFFE95322),
+                backgroundColor: Color(0xFF00D09E),
                 radius: 12,
                 child: const Icon(
                   Icons.shopping_cart,

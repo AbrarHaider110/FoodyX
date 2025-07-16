@@ -34,16 +34,18 @@ class _NewPasswordScreenState extends State<NewPasswordScreen> {
   Widget build(BuildContext context) {
     double screenHeight = MediaQuery.of(context).size.height;
     double screenWidth = MediaQuery.of(context).size.width;
+    bool isPortrait =
+        MediaQuery.of(context).orientation == Orientation.portrait;
 
     return Scaffold(
       body: Container(
-        color: const Color(0xFFF5CB58),
+        color: const Color(0xFF00D09E),
         width: screenWidth,
         height: screenHeight,
         child: Column(
           children: [
             Padding(
-              padding: EdgeInsets.only(top: screenHeight * 0.05),
+              padding: EdgeInsets.only(top: screenHeight * 0.09),
               child: const Center(
                 child: Text(
                   "Forget Password",
@@ -55,7 +57,7 @@ class _NewPasswordScreenState extends State<NewPasswordScreen> {
                 ),
               ),
             ),
-            SizedBox(height: screenHeight * 0.03),
+            SizedBox(height: screenHeight * 0.05),
             Expanded(
               child: Stack(
                 children: [
@@ -91,7 +93,7 @@ class _NewPasswordScreenState extends State<NewPasswordScreen> {
                                 hintStyle: TextStyle(color: Colors.grey),
                                 border: InputBorder.none,
                                 filled: true,
-                                fillColor: Color(0xFFFDF1C6),
+                                fillColor: Color(0xFFDFF7E2),
                                 enabledBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.all(
                                     Radius.circular(8),
@@ -112,9 +114,7 @@ class _NewPasswordScreenState extends State<NewPasswordScreen> {
                                 width: screenWidth * 0.7,
                                 child: ElevatedButton(
                                   style: ElevatedButton.styleFrom(
-                                    backgroundColor: const Color(0xFFE95322),
-                                    surfaceTintColor: Colors.transparent,
-                                    shadowColor: Colors.transparent,
+                                    backgroundColor: const Color(0xFF00D09E),
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(40),
                                     ),
@@ -128,7 +128,6 @@ class _NewPasswordScreenState extends State<NewPasswordScreen> {
                                       );
                                       return;
                                     }
-
                                     showSnackbar(
                                       context,
                                       "Password reset link sent!",

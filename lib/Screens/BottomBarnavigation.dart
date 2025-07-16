@@ -32,18 +32,18 @@ class _bottomBarScreenState extends State<bottomBarScreen> {
     return Scaffold(
       body: _pages[_selectedIndex],
       bottomNavigationBar: Container(
-        height: 50, // Adjust height to make it smaller
+        height: 50,
         child: ClipRRect(
           borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
           child: BottomNavigationBar(
             type: BottomNavigationBarType.fixed,
-            backgroundColor: Color(0xFFE95322),
+            backgroundColor: Color(0xFF00D09E),
             selectedItemColor: Colors.white,
-            unselectedItemColor: Colors.white.withOpacity(0.7),
+            unselectedItemColor: Colors.white70,
             currentIndex: _selectedIndex,
             onTap: _onItemTapped,
-            iconSize: 25, // Reduce icon size
-            selectedLabelStyle: TextStyle(fontSize: 0), // Reduce font size
+            iconSize: 25,
+            selectedLabelStyle: TextStyle(fontSize: 0),
             unselectedLabelStyle: TextStyle(fontSize: 0),
             items: [
               BottomNavigationBarItem(

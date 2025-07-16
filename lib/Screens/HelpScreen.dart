@@ -3,6 +3,10 @@ import 'package:flutter/material.dart';
 class helpScreen extends StatelessWidget {
   const helpScreen({Key? key}) : super(key: key);
 
+  static const Color primaryColor = Color(0xFF00D09E);
+  static const Color lightBackground = Color(0xFFD6F5ED);
+  static const Color yellowBackground = Color(0xFFF5CB58);
+
   @override
   Widget build(BuildContext context) {
     double screenHeight = MediaQuery.of(context).size.height;
@@ -12,7 +16,7 @@ class helpScreen extends StatelessWidget {
       body: Stack(
         children: [
           Container(
-            color: const Color(0xFFF5CB58),
+            color: primaryColor,
             width: screenWidth,
             height: screenHeight,
           ),
@@ -34,10 +38,10 @@ class helpScreen extends StatelessWidget {
             top: screenHeight * 0.11,
             left: screenWidth * 0.27,
             right: screenWidth * 0.20,
-            child: Text(
+            child: const Text(
               "How Can We Help You?",
               style: TextStyle(
-                color: Color(0xFFE95322),
+                color: Color.fromARGB(255, 255, 255, 255),
                 fontWeight: FontWeight.w700,
               ),
             ),
@@ -62,10 +66,8 @@ class helpScreen extends StatelessWidget {
             top: screenHeight * 0.2,
             left: screenWidth * 0.1,
             right: screenWidth * 0.1,
-            bottom: 0,
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 SizedBox(
                   width: 135,
@@ -73,108 +75,96 @@ class helpScreen extends StatelessWidget {
                   child: ElevatedButton(
                     onPressed: () {},
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Color(0xFFFFDECF),
-                      foregroundColor: Color(0xFFE95322),
+                      backgroundColor: lightBackground,
+                      foregroundColor: primaryColor,
                     ),
-                    child: Text("FAQ"),
+                    child: const Text("FAQ"),
                   ),
                 ),
-                SizedBox(width: 10),
                 SizedBox(
                   width: 135,
                   height: 30,
                   child: ElevatedButton(
                     onPressed: () {},
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Color(0xFFE95322),
+                      backgroundColor: primaryColor,
                       foregroundColor: Colors.white,
                     ),
-                    child: Text("Contact Us"),
+                    child: const Text("Contact Us"),
                   ),
                 ),
               ],
             ),
           ),
-          Positioned(
+          _helpTile(
             top: screenHeight * 0.3,
             left: screenWidth * 0.12,
-            child: Row(
-              children: [
-                Image.asset("assets/headphones.png"),
-                SizedBox(width: 15),
-                Text(
-                  "Customer Service",
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                SizedBox(width: 70),
-                Image.asset("assets/a1.png"),
-              ],
-            ),
+            icon: "assets/headphones.png",
+            label: "Customer Service",
+            iconColor: primaryColor,
           ),
-          Positioned(
+          _helpTile(
             top: screenHeight * 0.37,
             left: screenWidth * 0.12,
-            child: Row(
-              children: [
-                Image.asset("assets/Global.png"),
-                SizedBox(width: 15),
-                Text(
-                  "Website",
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                SizedBox(width: 151),
-                Image.asset("assets/a1.png"),
-              ],
-            ),
+            icon: "assets/Global.png",
+            label: "Website",
+            iconColor: primaryColor,
           ),
-          Positioned(
+          _helpTile(
             top: screenHeight * 0.45,
             left: screenWidth * 0.12,
-            child: Row(
-              children: [
-                Image.asset("assets/WhatApp.png"),
-                SizedBox(width: 15),
-                Text(
-                  "WhatsApp",
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                SizedBox(width: 130),
-                Image.asset("assets/a1.png"),
-              ],
-            ),
+            icon: "assets/WhatApp.png",
+            label: "WhatsApp",
+            iconColor: primaryColor,
           ),
-          Positioned(
+          _helpTile(
             top: screenHeight * 0.53,
             left: screenWidth * 0.12,
-            child: Row(
-              children: [
-                Image.asset("assets/Facebook.png"),
-                SizedBox(width: 15),
-                Text(
-                  "Facebook",
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                SizedBox(width: 137),
-                Image.asset("assets/a1.png"),
-              ],
-            ),
+            icon: "assets/Facebook.png",
+            label: "Facebook",
+            iconColor: primaryColor,
           ),
-          Positioned(
+          _helpTile(
             top: screenHeight * 0.61,
             left: screenWidth * 0.12,
-            child: Row(
-              children: [
-                Image.asset("assets/Instagram.png"),
-                SizedBox(width: 15),
-                Text(
-                  "Instagram",
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                SizedBox(width: 132),
-                Image.asset("assets/a1.png"),
-              ],
-            ),
+            icon: "assets/Instagram.png",
+            label: "Instagram",
+            iconColor: primaryColor,
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _helpTile({
+    required double top,
+    required double left,
+    required String icon,
+    required String label,
+    required Color iconColor,
+  }) {
+    return Positioned(
+      top: top,
+      left: left,
+      child: Row(
+        children: [
+          Container(
+            width: 30,
+            height: 30,
+            padding: const EdgeInsets.all(4),
+            decoration: BoxDecoration(
+              color: iconColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Image.asset(icon, color: iconColor),
+          ),
+          const SizedBox(width: 15),
+          Text(
+            label,
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(width: 70),
+          Icon(Icons.arrow_forward_ios, color: iconColor, size: 16),
         ],
       ),
     );

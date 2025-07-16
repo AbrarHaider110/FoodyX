@@ -1,23 +1,29 @@
 import 'package:flutter/material.dart';
 import 'package:food_delivery/Screens/secondScreen.dart';
 
-class firstScreen extends StatelessWidget {
-  const firstScreen({Key? key}) : super(key: key);
+class FirstScreen extends StatelessWidget {
+  const FirstScreen({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     final screenSize = MediaQuery.of(context).size;
+    final isPortrait =
+        MediaQuery.of(context).orientation == Orientation.portrait;
 
     return Scaffold(
       body: Stack(
         children: [
           Positioned.fill(
-            child: Image.asset("assets/slice-pizza.jpg", fit: BoxFit.cover),
+            child: Image.asset("assets/green_saled.png", fit: BoxFit.cover),
           ),
+
           Align(
             alignment: Alignment.bottomCenter,
             child: Container(
-              height: screenSize.height * 0.4, // 40% of screen height
+              height:
+                  isPortrait
+                      ? screenSize.height * 0.4
+                      : screenSize.height * 0.6,
               width: double.infinity,
               decoration: const BoxDecoration(
                 color: Colors.white,
@@ -26,76 +32,75 @@ class firstScreen extends StatelessWidget {
                   topRight: Radius.circular(30),
                 ),
               ),
-              child: Padding(
-                padding: EdgeInsets.symmetric(
-                  horizontal: screenSize.width * 0.05, // 5% of screen width
-                ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  children: [
-                    SizedBox(
-                      height: screenSize.height * 0.03,
-                    ), // 3% of screen height
-                    Image.asset(
-                      "assets/fPIcon.png",
-                      height: screenSize.height * 0.08, // 8% of screen height
-                    ),
-                    SizedBox(height: screenSize.height * 0.015),
-                    Text(
-                      "Order For Food",
-                      style: TextStyle(
-                        fontSize: screenSize.width * 0.06, // 6% of screen width
-                        color: const Color(0xFFE95322),
-                        fontWeight: FontWeight.bold,
+              child: SingleChildScrollView(
+                child: Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: screenSize.width * 0.05,
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      SizedBox(height: screenSize.height * 0.03),
+                      Image.asset(
+                        "assets/fPIcon.png",
+                        height: screenSize.height * 0.08,
+                        color: const Color(0xFF00D09E),
                       ),
-                    ),
-                    Padding(
-                      padding: EdgeInsets.symmetric(
-                        vertical: screenSize.height * 0.015,
-                      ),
-                      child: Text(
-                        "Get your favorite meals delivered to your doorstep with just a few taps! Enjoy fresh and delicious food anytime, anywhere.",
-                        textAlign: TextAlign.center,
+                      SizedBox(height: screenSize.height * 0.015),
+                      Text(
+                        "Order For Food",
                         style: TextStyle(
-                          fontSize:
-                              screenSize.width * 0.04, // 4% of screen width
-                          color: Colors.black54,
+                          fontSize: screenSize.width * 0.06,
+                          color: const Color(0xFF00D09E),
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
-                    ),
-                    SizedBox(height: screenSize.height * 0.015),
-                    ElevatedButton(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const secondScreen(),
-                          ),
-                        );
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFE95322),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                      ),
-                      child: Padding(
+                      Padding(
                         padding: EdgeInsets.symmetric(
-                          horizontal: screenSize.width * 0.08,
                           vertical: screenSize.height * 0.015,
                         ),
                         child: Text(
-                          "Next",
+                          "Get your favorite meals delivered to your doorstep with just a few taps! Enjoy fresh and delicious food anytime, anywhere.",
+                          textAlign: TextAlign.center,
                           style: TextStyle(
-                            fontSize:
-                                screenSize.width *
-                                0.045, // 4.5% of screen width
-                            color: Colors.white,
+                            fontSize: screenSize.width * 0.04,
+                            color: Colors.black54,
                           ),
                         ),
                       ),
-                    ),
-                  ],
+                      SizedBox(height: screenSize.height * 0.015),
+                      ElevatedButton(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const SecondScreen(),
+                            ),
+                          );
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF00D09E),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                        ),
+                        child: Padding(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: screenSize.width * 0.08,
+                            vertical: screenSize.height * 0.015,
+                          ),
+                          child: Text(
+                            "Next",
+                            style: TextStyle(
+                              fontSize: screenSize.width * 0.045,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ),
+                      SizedBox(height: screenSize.height * 0.015),
+                    ],
+                  ),
                 ),
               ),
             ),

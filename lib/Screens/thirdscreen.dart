@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:food_delivery/Screens/loginScreen.dart';
 
-class thirdScreen extends StatelessWidget {
-  const thirdScreen({Key? key}) : super(key: key);
+class ThirdScreen extends StatelessWidget {
+  const ThirdScreen({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     final screenSize = MediaQuery.of(context).size;
+    final isPortrait =
+        MediaQuery.of(context).orientation == Orientation.portrait;
 
     return Scaffold(
       body: Stack(
@@ -14,10 +16,14 @@ class thirdScreen extends StatelessWidget {
           Positioned.fill(
             child: Image.asset("assets/ts.png", fit: BoxFit.cover),
           ),
+
           Align(
             alignment: Alignment.bottomCenter,
             child: Container(
-              height: screenSize.height * 0.4, // 40% of screen height
+              height:
+                  isPortrait
+                      ? screenSize.height * 0.4
+                      : screenSize.height * 0.6,
               width: double.infinity,
               decoration: const BoxDecoration(
                 color: Colors.white,
@@ -26,73 +32,75 @@ class thirdScreen extends StatelessWidget {
                   topRight: Radius.circular(30),
                 ),
               ),
-              child: Padding(
-                padding: EdgeInsets.symmetric(
-                  horizontal: screenSize.width * 0.05, // 5% of screen width
-                ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  children: [
-                    SizedBox(height: screenSize.height * 0.03),
-                    Image.asset(
-                      "assets/deliverBoyIcon.png",
-                      height: screenSize.height * 0.08,
-                    ),
-                    SizedBox(height: screenSize.height * 0.015),
-                    Text(
-                      "Fast Delivery",
-                      style: TextStyle(
-                        fontSize: screenSize.width * 0.06,
-                        color: const Color(0xFFE95322),
-                        fontWeight: FontWeight.bold,
+              child: SingleChildScrollView(
+                child: Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: screenSize.width * 0.05,
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      SizedBox(height: screenSize.height * 0.03),
+                      Image.asset(
+                        "assets/deliverBoyIcon.png",
+                        height: screenSize.height * 0.08,
+                        color: const Color(0xFF00D09E),
                       ),
-                    ),
-                    Padding(
-                      padding: EdgeInsets.symmetric(
-                        vertical: screenSize.height * 0.015,
-                      ),
-                      child: Text(
-                        "Quick, reliable, and hassle-free delivery at your doorstep.",
-                        textAlign: TextAlign.center,
+                      SizedBox(height: screenSize.height * 0.015),
+                      Text(
+                        "Fast Delivery",
                         style: TextStyle(
-                          fontSize: screenSize.width * 0.04,
-                          color: Colors.black54,
+                          fontSize: screenSize.width * 0.06,
+                          color: const Color(0xFF00D09E),
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
-                    ),
-                    SizedBox(height: screenSize.height * 0.015),
-                    ElevatedButton(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const LoginScreen(),
-                          ),
-                        );
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFE95322),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                      ),
-                      child: Padding(
+                      Padding(
                         padding: EdgeInsets.symmetric(
-                          horizontal: screenSize.width * 0.08,
                           vertical: screenSize.height * 0.015,
                         ),
                         child: Text(
-                          "Get Started",
+                          "Quick, reliable, and hassle-free delivery at your doorstep.",
+                          textAlign: TextAlign.center,
                           style: TextStyle(
-                            fontSize:
-                                screenSize.width *
-                                0.045, // 4.5% of screen width
-                            color: Colors.white,
+                            fontSize: screenSize.width * 0.04,
+                            color: Colors.black54,
                           ),
                         ),
                       ),
-                    ),
-                  ],
+                      SizedBox(height: screenSize.height * 0.015),
+                      ElevatedButton(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const LoginScreen(),
+                            ),
+                          );
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF00D09E),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                        ),
+                        child: Padding(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: screenSize.width * 0.08,
+                            vertical: screenSize.height * 0.015,
+                          ),
+                          child: Text(
+                            "Get Started",
+                            style: TextStyle(
+                              fontSize: screenSize.width * 0.045,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ),
+                      SizedBox(height: screenSize.height * 0.01),
+                    ],
+                  ),
                 ),
               ),
             ),

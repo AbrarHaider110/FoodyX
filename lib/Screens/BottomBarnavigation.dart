@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:food_delivery/Screens/Buffet_Screen.dart';
 import 'package:food_delivery/Screens/HelpScreen.dart';
 import 'package:food_delivery/Screens/bestSellerScreen.dart';
 import 'package:food_delivery/Screens/homeScreen.dart';
@@ -15,7 +16,7 @@ class _bottomBarScreenState extends State<bottomBarScreen> {
 
   final List<Widget> _pages = [
     homeScreen(),
-    Center(child: Text("Buffet Screen")),
+    BuffetScreen(),
     bestSellerScreen(),
     Center(child: Text("List Screen")),
     helpScreen(),

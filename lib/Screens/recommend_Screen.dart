@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:food_delivery/Screens/detailScreen.dart';
 
 class RecommendScreen extends StatelessWidget {
   const RecommendScreen({Key? key}) : super(key: key);
@@ -123,14 +124,32 @@ class RecommendScreen extends StatelessWidget {
                 child: ListView.builder(
                   itemCount: displayImages.length,
                   itemBuilder: (context, index) {
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 16),
-                      child: _buildContainer(
-                        displayImages[index][0],
-                        displayImages[index][1],
-                        displayImages[index][2],
-                        displayImages[index][3],
-                        displayImages[index][4],
+                    final item = displayImages[index];
+                    return GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder:
+                                (_) => DetailScreen(
+                                  image: item[0],
+                                  price: item[1],
+                                  title: item[2],
+                                  subtitle: item[3],
+                                  rating: item[4],
+                                ),
+                          ),
+                        );
+                      },
+                      child: Padding(
+                        padding: const EdgeInsets.only(bottom: 16),
+                        child: _buildContainer(
+                          item[0],
+                          item[1],
+                          item[2],
+                          item[3],
+                          item[4],
+                        ),
                       ),
                     );
                   },

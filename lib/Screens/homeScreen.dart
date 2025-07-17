@@ -212,7 +212,7 @@ class homeScreen extends StatelessWidget {
                                     context,
                                     MaterialPageRoute(
                                       builder:
-                                          (context) => const bestSellerScreen(),
+                                          (context) => const BestSellerScreen(),
                                     ),
                                   );
                                 },

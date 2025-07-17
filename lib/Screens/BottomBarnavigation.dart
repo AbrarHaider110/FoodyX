@@ -17,7 +17,7 @@ class _bottomBarScreenState extends State<bottomBarScreen> {
   final List<Widget> _pages = [
     homeScreen(),
     BuffetScreen(),
-    bestSellerScreen(),
+    BestSellerScreen(),
     Center(child: Text("List Screen")),
     helpScreen(),
   ];

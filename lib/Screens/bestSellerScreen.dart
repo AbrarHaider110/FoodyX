@@ -1,80 +1,93 @@
 import 'package:flutter/material.dart';
+import 'package:food_delivery/Screens/detailScreen.dart';
 
-class bestSellerScreen extends StatelessWidget {
-  const bestSellerScreen({Key? key}) : super(key: key);
+class BestSellerScreen extends StatefulWidget {
+  const BestSellerScreen({Key? key}) : super(key: key);
+
+  @override
+  State<BestSellerScreen> createState() => _BestSellerScreenState();
+}
+
+class _BestSellerScreenState extends State<BestSellerScreen> {
+  List<List<String>> displayImages = [
+    [
+      "assets/f1.png",
+      "assets/small-Meals.png",
+      "\$15",
+      "Veg Roll",
+      "A delicious and crispy vegetarian roll filled with fresh veggies and sauces.",
+      "5.0",
+    ],
+    [
+      "assets/f2.png",
+      "assets/small-Desserts.png",
+      "\$12",
+      "Small Bruschetta",
+      "Toasted bread topped with fresh tomatoes and basil.",
+      "4.0",
+    ],
+    [
+      "assets/f3.png",
+      "assets/small-Desserts.png",
+      "\$15",
+      "Grilled Skewers",
+      "Tender skewers grilled with seasonal veggies and herbs.",
+      "5.0",
+    ],
+    [
+      "assets/f4.png",
+      "assets/small-Meals.png",
+      "\$10",
+      "BBQ Tacos",
+      "Spicy barbecue chicken with creamy white sauce.",
+      "5.0",
+    ],
+    [
+      "assets/f5.png",
+      "assets/small-Desserts.png",
+      "\$11",
+      "Broccoli Lasagna",
+      "Layers of pasta with broccoli, cream, and cheese.",
+      "5.0",
+    ],
+    [
+      "assets/f6.png",
+      "assets/small-Desserts.png",
+      "\$16",
+      "Ice Cream",
+      "Vanilla and chocolate mix with crunchy toppings.",
+      "4.0",
+    ],
+    [
+      "assets/f7.png",
+      "assets/small-Desserts.png",
+      "\$18",
+      "Brownie",
+      "Fudgy chocolate brownie with dark cocoa.",
+      "5.0",
+    ],
+    [
+      "assets/f8.png",
+      "assets/small-Desserts.png",
+      "\$20",
+      "Cheese Burger",
+      "Juicy beef patty with melted cheddar and veggies.",
+      "4.9",
+    ],
+  ];
+
+  List<bool> isExpandedList = [];
+
+  @override
+  void initState() {
+    super.initState();
+    isExpandedList = List.generate(displayImages.length, (_) => false);
+  }
 
   @override
   Widget build(BuildContext context) {
-    List<List<String>> displayImages = [
-      [
-        "assets/f1.png",
-        "assets/small-Meals.png",
-        "\$15",
-        "Veg Roll",
-        "Delicious veg roll",
-        "5.0",
-      ],
-      [
-        "assets/f2.png",
-        "assets/small-Desserts.png",
-        "\$12",
-        "Chocolate Cake",
-        "Tasty chocolate",
-        "4.0",
-      ],
-      [
-        "assets/f3.png",
-        "assets/small-Desserts.png",
-        "\$15",
-        "Strawberry Tart",
-        "Sweet and fresh",
-        "5.0",
-      ],
-      [
-        "assets/f4.png",
-        "assets/small-Meals.png",
-        "\$10",
-        "Pasta",
-        "Creamy white sauce",
-        "5.0",
-      ],
-      [
-        "assets/f5.png",
-        "assets/small-Desserts.png",
-        "\$11",
-        "Muffin",
-        "Soft and delicious",
-        "5.0",
-      ],
-      [
-        "assets/f6.png",
-        "assets/small-Desserts.png",
-        "\$16",
-        "Ice Cream",
-        "Vanilla with chocolate",
-        "4.0",
-      ],
-      [
-        "assets/f7.png",
-        "assets/small-Desserts.png",
-        "\$18",
-        "Brownie",
-        "Fudgy and chocolaty",
-        "5.0",
-      ],
-      [
-        "assets/f8.png",
-        "assets/small-Desserts.png",
-        "\$20",
-        "Fruit Salad",
-        "Fresh and healthy",
-        "4.0",
-      ],
-    ];
-
-    double screenHeight = MediaQuery.of(context).size.height;
-    double screenWidth = MediaQuery.of(context).size.width;
-    Orientation orientation = MediaQuery.of(context).orientation;
+    final screenHeight = MediaQuery.of(context).size.height;
+    final screenWidth = MediaQuery.of(context).size.width;
 
     return Scaffold(
       body: Stack(
@@ -104,54 +117,46 @@ class bestSellerScreen extends StatelessWidget {
             right: 0,
             bottom: 0,
             child: Container(
-              width: screenWidth,
               decoration: const BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(15),
-                  topRight: Radius.circular(15),
-                ),
+                borderRadius: BorderRadius.vertical(top: Radius.circular(15)),
               ),
               child: SingleChildScrollView(
-                child: Padding(
-                  padding: const EdgeInsets.all(12.0),
-                  child: Column(
-                    children: [
-                      const SizedBox(height: 12),
-                      const Text(
-                        "Discover our most popular dishes!",
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 17,
-                          color: Color(0xFF00D09E),
-                          fontWeight: FontWeight.w600,
-                        ),
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  children: [
+                    const SizedBox(height: 12),
+                    const Text(
+                      "Discover our most popular dishes!",
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 17,
+                        color: Color(0xFF00D09E),
+                        fontWeight: FontWeight.w600,
                       ),
-                      const SizedBox(height: 16),
-                      GridView.builder(
-                        itemCount: displayImages.length,
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount:
-                              orientation == Orientation.portrait ? 2 : 4,
-                          crossAxisSpacing: 12,
-                          mainAxisSpacing: 12,
-                          childAspectRatio: 0.65,
-                        ),
-                        itemBuilder: (context, index) {
-                          return _buildContainer(
-                            displayImages[index][0],
-                            displayImages[index][1],
-                            displayImages[index][2],
-                            displayImages[index][3],
-                            displayImages[index][4],
-                            displayImages[index][5],
-                          );
-                        },
-                      ),
-                    ],
-                  ),
+                    ),
+                    const SizedBox(height: 16),
+                    Wrap(
+                      spacing: 12,
+                      runSpacing: 12,
+                      children: List.generate(displayImages.length, (index) {
+                        final item = displayImages[index];
+                        return SizedBox(
+                          width: (screenWidth - 36) / 2,
+                          child: _buildCard(
+                            index,
+                            image: item[0],
+                            icon: item[1],
+                            price: item[2],
+                            title: item[3],
+                            subtitle: item[4],
+                            rating: item[5],
+                            context: context,
+                          ),
+                        );
+                      }),
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -161,128 +166,181 @@ class bestSellerScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildContainer(
-    String imagePath,
-    String iconPath,
-    String price,
-    String title,
-    String subtitle,
-    String rating,
-  ) {
-    return Container(
-      padding: const EdgeInsets.all(8),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(15),
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.3),
-            spreadRadius: 2,
-            blurRadius: 5,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Stack(
-            children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(15),
-                child: Image.asset(
-                  imagePath,
-                  fit: BoxFit.cover,
-                  width: double.infinity,
-                  height: 120,
-                ),
-              ),
-              Positioned(
-                left: 8,
-                right: 8,
-                top: 8,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Image.asset(iconPath, width: 30, height: 30),
-                    const Icon(Icons.favorite, color: Color(0xFFE95322)),
-                  ],
-                ),
-              ),
-              Positioned(
-                bottom: 8,
-                left: 100,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 4,
+  Widget _buildCard(
+    int index, {
+    required String image,
+    required String icon,
+    required String price,
+    required String title,
+    required String subtitle,
+    required String rating,
+    required BuildContext context,
+  }) {
+    final isExpanded = isExpandedList[index];
+    final words = subtitle.split(' ');
+    final shortDesc =
+        words.length > 4 ? words.sublist(0, 4).join(' ') + '...' : subtitle;
+
+    return AnimatedSize(
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+      child: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(15),
+          color: Colors.white,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.3),
+              spreadRadius: 2,
+              blurRadius: 5,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder:
+                        (_) => DetailScreen(
+                          image: image,
+                          price: price,
+                          title: title,
+                          subtitle: subtitle,
+                          rating: rating,
+                        ),
                   ),
-                  decoration: BoxDecoration(
-                    color: Color(0xFF00D09E),
-                    borderRadius: BorderRadius.circular(8),
+                );
+              },
+              child: Stack(
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(15),
+                    child: Image.asset(
+                      image,
+                      fit: BoxFit.cover,
+                      width: double.infinity,
+                      height: 140,
+                    ),
                   ),
+                  Positioned(
+                    left: 8,
+                    right: 8,
+                    top: 8,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Image.asset(icon, width: 30, height: 30),
+                        const Icon(Icons.favorite, color: Color(0xFFE95322)),
+                      ],
+                    ),
+                  ),
+                  Positioned(
+                    bottom: 8,
+                    left: 100,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF00D09E),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        price,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 10),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                SizedBox(
+                  width: 100,
                   child: Text(
-                    price,
+                    title,
                     style: const TextStyle(
-                      color: Colors.white,
+                      fontSize: 16,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              SizedBox(
-                width: 100,
-                child: Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 5,
+                    vertical: 3,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF00D09E),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.star,
+                        color: Color(0xFFFFD700),
+                        size: 10,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        rating,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 10,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 3),
-                decoration: BoxDecoration(
-                  color: Color(0xFF00D09E),
-                  borderRadius: BorderRadius.circular(8),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Text(
+                    isExpanded ? subtitle : shortDesc,
+                    style: const TextStyle(fontSize: 14, color: Colors.grey),
+                  ),
                 ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.star, color: Color(0xFFFFD700), size: 10),
-                    const SizedBox(width: 4),
-                    Text(
-                      rating,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 10,
-                      ),
+                GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      isExpandedList[index] = !isExpandedList[index];
+                    });
+                  },
+                  child: Text(
+                    isExpanded ? " See less" : " See more",
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: Color(0xFF00D09E),
+                      fontWeight: FontWeight.bold,
                     ),
-                  ],
+                  ),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 4),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              SizedBox(
-                width: 100,
-                child: Text(
-                  subtitle,
-                  style: const TextStyle(fontSize: 14, color: Colors.grey),
-                ),
-              ),
-              CircleAvatar(
-                backgroundColor: Color(0xFF00D09E),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Align(
+              alignment: Alignment.bottomRight,
+              child: CircleAvatar(
+                backgroundColor: const Color(0xFF00D09E),
                 radius: 12,
                 child: const Icon(
                   Icons.shopping_cart,
@@ -290,9 +348,9 @@ class bestSellerScreen extends StatelessWidget {
                   size: 16,
                 ),
               ),
-            ],
-          ),
-        ],
+            ),
+          ],
+        ),
       ),
     );
   }

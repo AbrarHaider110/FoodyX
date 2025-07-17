@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:food_delivery/Screens/bestSellerScreen.dart';
+import 'package:food_delivery/Screens/recommend_Screen.dart';
 
 class homeScreen extends StatelessWidget {
   const homeScreen({Key? key}) : super(key: key);
@@ -73,18 +74,48 @@ class homeScreen extends StatelessWidget {
         backgroundColor: Colors.transparent,
         automaticallyImplyLeading: false,
         elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.white),
         toolbarHeight: 100,
         actions: [
           Padding(
-            padding: const EdgeInsets.only(right: 8, top: 12),
-            child: Builder(
-              builder: (context) {
-                return IconButton(
-                  icon: _buildIconContainer(Icons.menu),
-                  onPressed: () => Scaffold.of(context).openEndDrawer(),
-                );
-              },
+            padding: const EdgeInsets.only(right: 12, top: 12),
+            child: Row(
+              children: [
+                _buildIconContainer(Icons.shopping_cart),
+                const SizedBox(width: 8),
+                Stack(
+                  children: [
+                    _buildIconContainer(Icons.notifications),
+                    Positioned(
+                      top: 2,
+                      right: 2,
+                      child: Container(
+                        padding: const EdgeInsets.all(3),
+                        decoration: const BoxDecoration(
+                          color: Colors.red,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Text(
+                          "3",
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 8,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(width: 8),
+                Builder(
+                  builder: (context) {
+                    return IconButton(
+                      icon: _buildIconContainer(Icons.menu),
+                      onPressed: () => Scaffold.of(context).openEndDrawer(),
+                    );
+                  },
+                ),
+              ],
             ),
           ),
         ],
@@ -102,46 +133,27 @@ class homeScreen extends StatelessWidget {
                 top: screenHeight * 0.098,
                 left: screenWidth * 0.05,
                 right: screenWidth * 0.05,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Flexible(
-                      flex: 2,
-                      child: SizedBox(
-                        height: 35,
-                        child: TextField(
-                          decoration: InputDecoration(
-                            hintText: "Search",
-                            filled: true,
-                            fillColor: Colors.white,
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(15),
-                              borderSide: BorderSide.none,
-                            ),
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                            ),
-                            suffixIcon: const Icon(
-                              Icons.filter_list,
-                              size: 20,
-                              color: Color(0xFF00D09E),
-                            ),
-                          ),
-                        ),
+                child: SizedBox(
+                  height: 35,
+                  child: TextField(
+                    decoration: InputDecoration(
+                      hintText: "Search",
+                      filled: true,
+                      fillColor: Colors.white,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(15),
+                        borderSide: BorderSide.none,
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                      ),
+                      suffixIcon: const Icon(
+                        Icons.filter_list,
+                        size: 20,
+                        color: Color(0xFF00D09E),
                       ),
                     ),
-                    const SizedBox(width: 10),
-                    Flexible(
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: [
-                          _buildIconContainer(Icons.shopping_cart),
-                          const SizedBox(width: 8),
-                          _buildIconContainer(Icons.notifications),
-                        ],
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
               ),
               Positioned(
@@ -184,28 +196,6 @@ class homeScreen extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          SingleChildScrollView(
-                            scrollDirection: Axis.horizontal,
-                            child: Row(
-                              children: [
-                                Image.asset("assets/Bot-menu.png"),
-                                const SizedBox(width: 15),
-                                Image.asset("assets/Bot-menu 1.png"),
-                                const SizedBox(width: 15),
-                                Image.asset("assets/Bot-menu 2.png"),
-                                const SizedBox(width: 15),
-                                Image.asset("assets/Bot-menu 3.png"),
-                                const SizedBox(width: 1),
-                                Image.asset(
-                                  "assets/Bot-menu 4.png",
-                                  width: 75,
-                                  height: 74,
-                                  fit: BoxFit.contain,
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(height: 25),
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
@@ -267,16 +257,9 @@ class homeScreen extends StatelessWidget {
                           const SizedBox(height: 30),
                           Container(
                             width: double.infinity,
-                            height: screenHeight * 0.28,
+                            height: 160,
                             decoration: BoxDecoration(
                               borderRadius: BorderRadius.circular(20),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.15),
-                                  blurRadius: 8,
-                                  offset: const Offset(0, 4),
-                                ),
-                              ],
                               image: const DecorationImage(
                                 image: AssetImage("assets/dx5.png"),
                                 fit: BoxFit.cover,
@@ -284,44 +267,59 @@ class homeScreen extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(height: 30),
-                          const Text(
-                            "Recommend",
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Text(
+                                "Recommend",
+                                style: TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              TextButton(
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => RecommendScreen(),
+                                    ),
+                                  );
+                                },
+                                child: const Text(
+                                  "View All >",
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Color(0xFF00D09E),
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 15),
+                          SizedBox(
+                            height: 180,
+                            child: ListView(
+                              scrollDirection: Axis.horizontal,
+                              children: [
+                                buildRecommendItem(
+                                  "assets/1.png",
+                                  "\$15",
+                                  "Mexican Appetizer",
+                                  "5.0",
+                                  screenWidth,
+                                ),
+                                const SizedBox(width: 10),
+                                buildRecommendItem(
+                                  "assets/dx3.png",
+                                  "\$12.99",
+                                  "Cheese Bites",
+                                  "4.8",
+                                  screenWidth,
+                                ),
+                              ],
                             ),
-                          ),
-                          const SizedBox(height: 15),
-                          buildBuffetContainer(
-                            "assets/1.png",
-                            "\$15",
-                            "Mexican Appetizer",
-                            "Tartila Chips with Toppins",
-                            "5.0",
-                          ),
-                          const SizedBox(height: 15),
-                          buildBuffetContainer(
-                            "assets/2.png",
-                            "\$12",
-                            "Pork Skewer",
-                            "Marinated in a rich blend of herbs and spices",
-                            "4.8",
-                          ),
-                          const SizedBox(height: 15),
-                          buildBuffetContainer(
-                            "assets/3.png",
-                            "\$15",
-                            "Fresh Prawn Ceviche",
-                            "Shrimp marinated in zesty lime juice",
-                            "4.9",
-                          ),
-                          const SizedBox(height: 15),
-                          buildBuffetContainer(
-                            "assets/4.png",
-                            "\$10",
-                            "Chicken Burger",
-                            "Tender grilled chicken breast, topped with crisp lettuce",
-                            "5.0",
                           ),
                           const SizedBox(height: 40),
                         ],
@@ -366,7 +364,7 @@ class homeScreen extends StatelessWidget {
         color: Colors.white,
         borderRadius: BorderRadius.circular(15),
       ),
-      child: Icon(icon, color: const Color(0xFF00D09E)),
+      child: Icon(icon, color: Color(0xFF00D09E)),
     );
   }
 
@@ -416,15 +414,16 @@ class homeScreen extends StatelessWidget {
     );
   }
 
-  Widget buildBuffetContainer(
+  Widget buildRecommendItem(
     String imagePath,
     String price,
     String title,
-    String subtitle,
     String rating,
+    double screenWidth,
   ) {
     return Container(
-      padding: const EdgeInsets.all(10),
+      width: 160,
+      margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(15),
         color: Colors.white,
@@ -437,101 +436,73 @@ class homeScreen extends StatelessWidget {
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Stack(
         children: [
-          Stack(
-            children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(15),
-                child: Image.asset(
-                  imagePath,
-                  fit: BoxFit.cover,
-                  width: double.infinity,
-                  height: 160,
-                ),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(15),
+            child: Image.asset(
+              imagePath,
+              width: 160,
+              height: 180,
+              fit: BoxFit.cover,
+            ),
+          ),
+          Positioned(
+            top: 10,
+            left: 10,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: const Color(0xFF00D09E),
+                borderRadius: BorderRadius.circular(6),
               ),
-              Positioned(
-                bottom: 8,
-                right: 8,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF00D09E),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    price,
+              child: Row(
+                children: [
+                  const Icon(Icons.star, size: 12, color: Color(0xFFFFD700)),
+                  const SizedBox(width: 3),
+                  Text(
+                    rating,
                     style: const TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
+                      fontSize: 10,
                     ),
                   ),
-                ),
+                ],
               ),
-            ],
+            ),
           ),
-          const SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                child: Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
+          Positioned(
+            bottom: 30,
+            right: 10,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: const Color(0xFF00D09E),
+                borderRadius: BorderRadius.circular(6),
               ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF00D09E),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.star, size: 12, color: Color(0xFFFFD700)),
-                    const SizedBox(width: 4),
-                    Text(
-                      rating,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 10,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 6),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Text(
-                  subtitle,
-                  style: const TextStyle(fontSize: 14, color: Colors.grey),
-                  softWrap: true,
-                ),
-              ),
-              const SizedBox(width: 8),
-              CircleAvatar(
-                radius: 12,
-                backgroundColor: const Color(0xFF00D09E),
-                child: const Icon(
-                  Icons.shopping_cart,
-                  size: 16,
+              child: Text(
+                price,
+                style: const TextStyle(
                   color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 12,
                 ),
               ),
-            ],
+            ),
+          ),
+          Positioned(
+            bottom: 10,
+            left: 10,
+            child: Text(
+              title,
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+                shadows: [Shadow(blurRadius: 2, color: Colors.black)],
+              ),
+            ),
           ),
         ],
       ),

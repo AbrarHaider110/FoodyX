@@ -111,6 +111,11 @@ flutter:
    - assets/8.png
    - assets/9.png
    - assets/10.png
+   - assets/R1.png
+   - assets/R2.png
+   - assets/R3.png
+   - assets/R4.png
+   - assets/R5.png
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

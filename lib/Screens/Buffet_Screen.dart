@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:food_delivery/Screens/detailScreen.dart';
+import 'package:provider/provider.dart';
+import 'package:food_delivery/Provider/order_provider.dart' as upper;
+import 'detailScreen.dart';
 
 class BuffetScreen extends StatefulWidget {
   const BuffetScreen({Key? key}) : super(key: key);
@@ -11,7 +13,7 @@ class BuffetScreen extends StatefulWidget {
 class _BuffetScreenState extends State<BuffetScreen> {
   List<bool> expandedItems = [];
 
-  List<List<String>> displayImages = [
+  final List<List<String>> displayImages = [
     [
       "assets/1.png",
       "\$15",
@@ -31,55 +33,6 @@ class _BuffetScreenState extends State<BuffetScreen> {
       "\$15",
       "Fresh Prawn Ceviche",
       "Delightfully zesty shrimp ceviche marinated in citrus with diced tomatoes, onions, and cilantro—served chilled for a refreshing kick.",
-      "4.9",
-    ],
-    [
-      "assets/4.png",
-      "\$10",
-      "Chicken Burger",
-      "Tender grilled chicken breast on a brioche bun, topped with crispy lettuce, tomato, melted cheese, and our house special sauce.",
-      "5.0",
-    ],
-    [
-      "assets/5.png",
-      "\$11",
-      "Broccoli Lasagna",
-      "A healthy twist on the classic lasagna layered with tender broccoli, creamy ricotta cheese, and house-made béchamel sauce.",
-      "5.0",
-    ],
-    [
-      "assets/6.png",
-      "\$16",
-      "Mushroom Risotto",
-      "Creamy risotto slow-cooked with wild mushrooms, parmesan cheese, and a splash of white wine—rich and comforting in every bite.",
-      "4.9",
-    ],
-    [
-      "assets/7.png",
-      "\$18",
-      "Macarons",
-      "Crispy on the outside, chewy on the inside—delicate vanilla and chocolate macarons crafted with almond flour and love.",
-      "5.0",
-    ],
-    [
-      "assets/8.png",
-      "\$20",
-      "Chocolate Brownie",
-      "Decadent fudge brownie made with premium cocoa, melted chocolate, and a hint of vanilla, served warm with chocolate drizzle.",
-      "4.0",
-    ],
-    [
-      "assets/9.png",
-      "\$20",
-      "Mojito",
-      "A refreshing Cuban classic made with white rum, fresh mint leaves, lime juice, and soda—perfect for a sunny day.",
-      "4.7",
-    ],
-    [
-      "assets/10.png",
-      "\$20",
-      "Iced Coffee",
-      "Smooth espresso blended with chilled milk and a hint of sweetness—served over ice for that perfect caffeine kick.",
       "4.9",
     ],
   ];
@@ -139,7 +92,7 @@ class _BuffetScreenState extends State<BuffetScreen> {
                   itemBuilder: (context, index) {
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 16),
-                      child: _buildItem(index),
+                      child: _buildItem(context, index),
                     );
                   },
                 ),
@@ -151,7 +104,7 @@ class _BuffetScreenState extends State<BuffetScreen> {
     );
   }
 
-  Widget _buildItem(int index) {
+  Widget _buildItem(BuildContext context, int index) {
     final item = displayImages[index];
     final isExpanded = expandedItems[index];
 
@@ -288,12 +241,28 @@ class _BuffetScreenState extends State<BuffetScreen> {
             ],
           ),
           const SizedBox(height: 6),
-          const Align(
+          Align(
             alignment: Alignment.centerRight,
-            child: CircleAvatar(
-              radius: 12,
-              backgroundColor: Color(0xFF00D09E),
-              child: Icon(Icons.shopping_cart, size: 16, color: Colors.white),
+            child: InkWell(
+              onTap: () {
+                final newOrder = upper.Order(
+                  title: item[2],
+                  imageUrl: item[0],
+                  price: double.parse(item[1].replaceAll('\$', '')),
+                  quantity: 1,
+                );
+
+                Provider.of<upper.OrderProvider>(
+                  context,
+                  listen: false,
+                ).addOrder(newOrder);
+              },
+
+              child: const CircleAvatar(
+                radius: 14,
+                backgroundColor: Color(0xFF00D09E),
+                child: Icon(Icons.shopping_cart, size: 16, color: Colors.white),
+              ),
             ),
           ),
         ],

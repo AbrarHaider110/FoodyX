@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:food_delivery/Screens/bestSellerScreen.dart';
+import 'package:food_delivery/Screens/my_orders.dart';
 import 'package:food_delivery/Screens/recommend_Screen.dart';
 
 class homeScreen extends StatelessWidget {
@@ -56,7 +57,18 @@ class homeScreen extends StatelessWidget {
                     ],
                   ),
                 ),
-                _buildDrawerItem(Icons.shopping_bag, 'My Orders'),
+                _buildDrawerItem(
+                  Icons.shopping_bag,
+                  'My Orders',
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => MyOrdersScreen()),
+                    );
+                  },
+                ),
+
                 _buildDrawerItem(Icons.person, 'My Profile'),
                 _buildDrawerItem(Icons.location_on, 'Delivery Address'),
                 _buildDrawerItem(Icons.credit_card, 'Payment Methods'),
@@ -131,11 +143,12 @@ class homeScreen extends StatelessWidget {
               ),
               Positioned(
                 top: screenHeight * 0.098,
-                left: screenWidth * 0.05,
-                right: screenWidth * 0.05,
+                left: screenWidth * 0.09,
+                right: screenWidth * 0.45,
                 child: SizedBox(
                   height: 35,
                   child: TextField(
+                    autofocus: false,
                     decoration: InputDecoration(
                       hintText: "Search",
                       filled: true,
@@ -144,10 +157,8 @@ class homeScreen extends StatelessWidget {
                         borderRadius: BorderRadius.circular(15),
                         borderSide: BorderSide.none,
                       ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                      ),
-                      suffixIcon: const Icon(
+                      contentPadding: EdgeInsets.symmetric(horizontal: 16),
+                      suffixIcon: Icon(
                         Icons.filter_list,
                         size: 20,
                         color: Color(0xFF00D09E),
@@ -156,6 +167,7 @@ class homeScreen extends StatelessWidget {
                   ),
                 ),
               ),
+
               Positioned(
                 top: screenHeight * 0.15,
                 left: 35,
@@ -335,7 +347,11 @@ class homeScreen extends StatelessWidget {
     );
   }
 
-  static Widget _buildDrawerItem(IconData icon, String title) {
+  static Widget _buildDrawerItem(
+    IconData icon,
+    String title, {
+    VoidCallback? onTap,
+  }) {
     return Column(
       children: [
         Padding(
@@ -343,7 +359,7 @@ class homeScreen extends StatelessWidget {
           child: ListTile(
             leading: _buildIconContainer(icon),
             title: Text(title, style: const TextStyle(color: Colors.white)),
-            onTap: () {},
+            onTap: onTap,
           ),
         ),
         const Divider(

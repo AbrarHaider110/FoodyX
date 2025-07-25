@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:food_delivery/Screens/loginScreen.dart';
 
@@ -11,7 +13,7 @@ class signUpScreen extends StatefulWidget {
 class _signUpScreenState extends State<signUpScreen> {
   final TextEditingController _email = TextEditingController();
   final TextEditingController _password = TextEditingController();
-  final TextEditingController _fullName = TextEditingController();
+  final TextEditingController _name = TextEditingController();
   final TextEditingController _mobileNumber = TextEditingController();
   final TextEditingController _dob = TextEditingController();
 
@@ -21,7 +23,7 @@ class _signUpScreenState extends State<signUpScreen> {
   void dispose() {
     _email.dispose();
     _password.dispose();
-    _fullName.dispose();
+    _name.dispose();
     _mobileNumber.dispose();
     _dob.dispose();
     super.dispose();
@@ -74,7 +76,7 @@ class _signUpScreenState extends State<signUpScreen> {
                       _buildLabel("Password"),
                       _buildPasswordField(),
                       _buildLabel("Full Name"),
-                      _buildTextField(_fullName, "Abrar Haider"),
+                      _buildTextField(_name, "Abrar Haider"),
                       _buildLabel("Mobile Number"),
                       _buildTextField(_mobileNumber, "+92 123 456 789"),
                       _buildLabel("Date of Birth"),
@@ -84,16 +86,69 @@ class _signUpScreenState extends State<signUpScreen> {
                         child: SizedBox(
                           width: screenSize.width * 0.7,
                           child: ElevatedButton(
-                            onPressed: () {
-                              Navigator.pushReplacement(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => const LoginScreen(),
-                                ),
-                              );
+                            onPressed: () async {
+                              final name = _name.text.trim();
+                              final email = _email.text.trim();
+                              final password = _password.text.trim();
+                              final mobile = _mobileNumber.text.trim();
+                              final dob = _dob.text.trim();
+
+                              if (name.isEmpty ||
+                                  email.isEmpty ||
+                                  password.isEmpty ||
+                                  mobile.isEmpty ||
+                                  dob.isEmpty) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('All fields are required'),
+                                    backgroundColor: Colors.red,
+                                  ),
+                                );
+                                return;
+                              }
+
+                              try {
+                                final UserCredential userCredential =
+                                    await FirebaseAuth.instance
+                                        .createUserWithEmailAndPassword(
+                                          email: email,
+                                          password: password,
+                                        );
+
+                                await FirebaseFirestore.instance
+                                    .collection('users')
+                                    .doc(userCredential.user!.uid)
+                                    .set({
+                                      'name': name,
+                                      'email': email,
+                                      'mobile': mobile,
+                                      'dob': dob,
+                                    });
+
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('Sign Up Successful'),
+                                    backgroundColor: Color(0xFF00D09E),
+                                  ),
+                                );
+
+                                Navigator.pushReplacement(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => const LoginScreen(),
+                                  ),
+                                );
+                              } on FirebaseAuthException catch (e) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(e.message ?? 'Signup failed'),
+                                    backgroundColor: Colors.red,
+                                  ),
+                                );
+                              }
                             },
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF00D09E),
+                              backgroundColor: Color(0xFF00D09E),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(20),
                               ),
@@ -112,6 +167,7 @@ class _signUpScreenState extends State<signUpScreen> {
                           ),
                         ),
                       ),
+
                       Center(
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,

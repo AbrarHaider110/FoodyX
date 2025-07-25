@@ -1,6 +1,8 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:food_delivery/Screens/BottomBarnavigation.dart';
 import 'package:food_delivery/Screens/forgetPassword.dart';
+import 'package:food_delivery/Screens/homeScreen.dart';
 import 'package:food_delivery/Screens/signupScreen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -164,13 +166,51 @@ class _LoginScreenState extends State<LoginScreen> {
                           child: SizedBox(
                             width: screenSize.width * 0.7,
                             child: ElevatedButton(
-                              onPressed: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => bottomBarScreen(),
-                                  ),
-                                );
+                              onPressed: () async {
+                                final email = _email.text.trim();
+                                final password = _password.text.trim();
+
+                                if (email.isEmpty || password.isEmpty) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: const Text(
+                                        'Email and Password cannot be empty',
+                                      ),
+                                      backgroundColor: Colors.red,
+                                    ),
+                                  );
+                                  return;
+                                }
+
+                                try {
+                                  await FirebaseAuth.instance
+                                      .signInWithEmailAndPassword(
+                                        email: email,
+                                        password: password,
+                                      );
+
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: const Text('Sign In Successful'),
+                                      backgroundColor: const Color(0xFF00D09E),
+                                    ),
+                                  );
+                                  Navigator.pushReplacement(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => const homeScreen(),
+                                    ),
+                                  );
+                                } on FirebaseAuthException catch (e) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        e.message ?? 'Sign In Failed',
+                                      ),
+                                      backgroundColor: Colors.red,
+                                    ),
+                                  );
+                                }
                               },
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: const Color(0xFF00D09E),
@@ -193,6 +233,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                           ),
                         ),
+
                         SizedBox(height: screenSize.height * 0.02),
                         const Center(child: Text("Or sign up with")),
                         SizedBox(height: screenSize.height * 0.01),

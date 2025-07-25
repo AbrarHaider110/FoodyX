@@ -2,9 +2,42 @@ import 'package:flutter/material.dart';
 import 'package:food_delivery/Screens/bestSellerScreen.dart';
 import 'package:food_delivery/Screens/my_orders.dart';
 import 'package:food_delivery/Screens/recommend_Screen.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
-class homeScreen extends StatelessWidget {
+class homeScreen extends StatefulWidget {
   const homeScreen({Key? key}) : super(key: key);
+
+  @override
+  State<homeScreen> createState() => _homeScreenState();
+}
+
+class _homeScreenState extends State<homeScreen> {
+  String userName = "Guest";
+  String userEmail = "Guest@gmail.com";
+
+  @override
+  void initState() {
+    super.initState();
+    loadUserData();
+  }
+
+  Future<void> loadUserData() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      final doc =
+          await FirebaseFirestore.instance
+              .collection('users')
+              .doc(user.uid)
+              .get();
+      if (doc.exists) {
+        setState(() {
+          userName = doc['name'] ?? 'Guest';
+          userEmail = doc['email'] ?? 'Guest@gmail.com';
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -36,18 +69,18 @@ class homeScreen extends StatelessWidget {
                       const SizedBox(width: 15),
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
-                        children: const [
+                        children: [
                           Text(
-                            "Guest",
-                            style: TextStyle(
+                            userName,
+                            style: const TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
                               color: Colors.white,
                             ),
                           ),
                           Text(
-                            "Guest@gmail.com",
-                            style: TextStyle(
+                            userEmail,
+                            style: const TextStyle(
                               fontSize: 14,
                               color: Colors.white70,
                             ),
@@ -68,7 +101,6 @@ class homeScreen extends StatelessWidget {
                     );
                   },
                 ),
-
                 _buildDrawerItem(Icons.person, 'My Profile'),
                 _buildDrawerItem(Icons.location_on, 'Delivery Address'),
                 _buildDrawerItem(Icons.credit_card, 'Payment Methods'),
@@ -76,7 +108,17 @@ class homeScreen extends StatelessWidget {
                 _buildDrawerItem(Icons.question_answer, 'Help and FAQs'),
                 _buildDrawerItem(Icons.settings, 'Settings'),
                 const SizedBox(height: 20),
-                _buildDrawerItem(Icons.logout_outlined, 'Logout'),
+                ListTile(
+                  leading: const Icon(Icons.logout, color: Colors.white),
+                  title: const Text(
+                    'Logout',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                  onTap: () async {
+                    await FirebaseAuth.instance.signOut();
+                    Navigator.of(context).pushReplacementNamed('/login');
+                  },
+                ),
               ],
             ),
           ),
@@ -167,7 +209,6 @@ class homeScreen extends StatelessWidget {
                   ),
                 ),
               ),
-
               Positioned(
                 top: screenHeight * 0.15,
                 left: 35,

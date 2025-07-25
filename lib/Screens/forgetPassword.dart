@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 class NewPasswordScreen extends StatefulWidget {
@@ -121,6 +122,10 @@ class _NewPasswordScreenState extends State<NewPasswordScreen> {
                                     padding: const EdgeInsets.all(20),
                                   ),
                                   onPressed: () {
+                                    FirebaseAuth.instance
+                                        .sendPasswordResetEmail(
+                                          email: _email.text,
+                                        );
                                     if (_email.text.trim().isEmpty) {
                                       showSnackbar(
                                         context,
@@ -131,7 +136,7 @@ class _NewPasswordScreenState extends State<NewPasswordScreen> {
                                     showSnackbar(
                                       context,
                                       "Password reset link sent!",
-                                      color: Colors.green,
+                                      color: const Color(0xFF00D09E),
                                     );
                                   },
                                   child: const Text(

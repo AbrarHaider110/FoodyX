@@ -83,91 +83,92 @@ class _signUpScreenState extends State<signUpScreen> {
                       _buildTextField(_dob, "MM DD YY"),
                       SizedBox(height: screenSize.height * 0.01),
                       Center(
-                        child: SizedBox(
-                          width: screenSize.width * 0.7,
-                          child: ElevatedButton(
-                            onPressed: () async {
-                              final name = _name.text.trim();
-                              final email = _email.text.trim();
-                              final password = _password.text.trim();
-                              final mobile = _mobileNumber.text.trim();
-                              final dob = _dob.text.trim();
+                        child: Builder(
+                          builder:
+                              (context) => SizedBox(
+                                width: screenSize.width * 0.7,
+                                child: ElevatedButton(
+                                  onPressed: () async {
+                                    final name = _name.text.trim();
+                                    final email = _email.text.trim();
+                                    final password = _password.text.trim();
+                                    final mobile = _mobileNumber.text.trim();
+                                    final dob = _dob.text.trim();
 
-                              if (name.isEmpty ||
-                                  email.isEmpty ||
-                                  password.isEmpty ||
-                                  mobile.isEmpty ||
-                                  dob.isEmpty) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text('All fields are required'),
-                                    backgroundColor: Colors.red,
+                                    if (name.isEmpty ||
+                                        email.isEmpty ||
+                                        password.isEmpty ||
+                                        mobile.isEmpty ||
+                                        dob.isEmpty) {
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        const SnackBar(
+                                          content: Text(
+                                            'All fields are required',
+                                          ),
+                                          backgroundColor: Colors.red,
+                                        ),
+                                      );
+                                      return;
+                                    }
+
+                                    try {
+                                      await FirebaseAuth.instance
+                                          .createUserWithEmailAndPassword(
+                                            email: email,
+                                            password: password,
+                                          );
+
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        const SnackBar(
+                                          content: Text('Sign Up Successful'),
+                                          backgroundColor: Color(0xFF00D09E),
+                                        ),
+                                      );
+
+                                      Navigator.pushReplacement(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (_) => const LoginScreen(),
+                                        ),
+                                      );
+                                    } on FirebaseAuthException catch (e) {
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        SnackBar(
+                                          content: Text(
+                                            e.message ?? 'Signup failed',
+                                          ),
+                                          backgroundColor: Colors.red,
+                                        ),
+                                      );
+                                    }
+                                  },
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: const Color(0xFF00D09E),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(20),
+                                    ),
+                                    padding: EdgeInsets.symmetric(
+                                      vertical: screenSize.height * 0.015,
+                                    ),
                                   ),
-                                );
-                                return;
-                              }
-
-                              try {
-                                final UserCredential userCredential =
-                                    await FirebaseAuth.instance
-                                        .createUserWithEmailAndPassword(
-                                          email: email,
-                                          password: password,
-                                        );
-
-                                await FirebaseFirestore.instance
-                                    .collection('users')
-                                    .doc(userCredential.user!.uid)
-                                    .set({
-                                      'name': name,
-                                      'email': email,
-                                      'mobile': mobile,
-                                      'dob': dob,
-                                    });
-
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text('Sign Up Successful'),
-                                    backgroundColor: Color(0xFF00D09E),
+                                  child: const Text(
+                                    "Sign Up",
+                                    style: TextStyle(
+                                      fontSize: 17,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
+                                    ),
                                   ),
-                                );
-
-                                Navigator.pushReplacement(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => const LoginScreen(),
-                                  ),
-                                );
-                              } on FirebaseAuthException catch (e) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(e.message ?? 'Signup failed'),
-                                    backgroundColor: Colors.red,
-                                  ),
-                                );
-                              }
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Color(0xFF00D09E),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(20),
+                                ),
                               ),
-                              padding: EdgeInsets.symmetric(
-                                vertical: screenSize.height * 0.015,
-                              ),
-                            ),
-                            child: const Text(
-                              "Sign Up",
-                              style: TextStyle(
-                                fontSize: 17,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ),
                         ),
                       ),
-
                       Center(
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,

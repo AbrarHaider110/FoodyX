@@ -3,177 +3,21 @@ import 'package:food_delivery/Screens/bestSellerScreen.dart';
 import 'package:food_delivery/Screens/my_orders.dart';
 import 'package:food_delivery/Screens/recommend_Screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 
-class homeScreen extends StatefulWidget {
-  const homeScreen({Key? key}) : super(key: key);
+class HomeScreen extends StatefulWidget {
+  const HomeScreen({Key? key}) : super(key: key);
 
   @override
-  State<homeScreen> createState() => _homeScreenState();
+  State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _homeScreenState extends State<homeScreen> {
-  String userName = "Guest";
-  String userEmail = "Guest@gmail.com";
-
-  @override
-  void initState() {
-    super.initState();
-    loadUserData();
-  }
-
-  Future<void> loadUserData() async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user != null) {
-      final doc =
-          await FirebaseFirestore.instance
-              .collection('users')
-              .doc(user.uid)
-              .get();
-      if (doc.exists) {
-        setState(() {
-          userName = doc['name'] ?? 'Guest';
-          userEmail = doc['email'] ?? 'Guest@gmail.com';
-        });
-      }
-    }
-  }
-
+class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final screenHeight = MediaQuery.of(context).size.height;
     final screenWidth = MediaQuery.of(context).size.width;
 
     return Scaffold(
-      extendBodyBehindAppBar: true,
-      endDrawer: ClipRRect(
-        borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(70),
-          bottomLeft: Radius.circular(70),
-        ),
-        child: Drawer(
-          child: Container(
-            color: const Color(0xFF00D09E),
-            child: Column(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  child: Row(
-                    children: [
-                      const CircleAvatar(
-                        radius: 30,
-                        backgroundImage: NetworkImage(
-                          "https://www.citypng.com/public/uploads/preview/png-round-blue-contact-user-profile-icon-701751694975293fcgzulxp2k.png",
-                        ),
-                      ),
-                      const SizedBox(width: 15),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            userName,
-                            style: const TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
-                          ),
-                          Text(
-                            userEmail,
-                            style: const TextStyle(
-                              fontSize: 14,
-                              color: Colors.white70,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-                _buildDrawerItem(
-                  Icons.shopping_bag,
-                  'My Orders',
-                  onTap: () {
-                    Navigator.pop(context);
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => MyOrdersScreen()),
-                    );
-                  },
-                ),
-                _buildDrawerItem(Icons.person, 'My Profile'),
-                _buildDrawerItem(Icons.location_on, 'Delivery Address'),
-                _buildDrawerItem(Icons.credit_card, 'Payment Methods'),
-                _buildDrawerItem(Icons.phone_in_talk, 'Contact Us'),
-                _buildDrawerItem(Icons.question_answer, 'Help and FAQs'),
-                _buildDrawerItem(Icons.settings, 'Settings'),
-                const SizedBox(height: 20),
-                ListTile(
-                  leading: const Icon(Icons.logout, color: Colors.white),
-                  title: const Text(
-                    'Logout',
-                    style: TextStyle(color: Colors.white),
-                  ),
-                  onTap: () async {
-                    await FirebaseAuth.instance.signOut();
-                    Navigator.of(context).pushReplacementNamed('/login');
-                  },
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        automaticallyImplyLeading: false,
-        elevation: 0,
-        toolbarHeight: 100,
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 12, top: 12),
-            child: Row(
-              children: [
-                _buildIconContainer(Icons.shopping_cart),
-                const SizedBox(width: 8),
-                Stack(
-                  children: [
-                    _buildIconContainer(Icons.notifications),
-                    Positioned(
-                      top: 2,
-                      right: 2,
-                      child: Container(
-                        padding: const EdgeInsets.all(3),
-                        decoration: const BoxDecoration(
-                          color: Colors.red,
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Text(
-                          "3",
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 8,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(width: 8),
-                Builder(
-                  builder: (context) {
-                    return IconButton(
-                      icon: _buildIconContainer(Icons.menu),
-                      onPressed: () => Scaffold.of(context).openEndDrawer(),
-                    );
-                  },
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
       body: LayoutBuilder(
         builder: (context, constraints) {
           return Stack(
@@ -190,7 +34,6 @@ class _homeScreenState extends State<homeScreen> {
                 child: SizedBox(
                   height: 35,
                   child: TextField(
-                    autofocus: false,
                     decoration: InputDecoration(
                       hintText: "Search",
                       filled: true,
@@ -199,8 +42,10 @@ class _homeScreenState extends State<homeScreen> {
                         borderRadius: BorderRadius.circular(15),
                         borderSide: BorderSide.none,
                       ),
-                      contentPadding: EdgeInsets.symmetric(horizontal: 16),
-                      suffixIcon: Icon(
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                      ),
+                      suffixIcon: const Icon(
                         Icons.filter_list,
                         size: 20,
                         color: Color(0xFF00D09E),
@@ -209,6 +54,68 @@ class _homeScreenState extends State<homeScreen> {
                   ),
                 ),
               ),
+              Stack(
+                children: [
+                  Positioned(
+                    top: screenHeight * 0.098,
+                    right: 20,
+                    child: Row(
+                      children: [
+                        GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const MyOrdersScreen(),
+                              ),
+                            );
+                          },
+                          child: _buildIconContainer(Icons.shopping_cart),
+                        ),
+                        const SizedBox(width: 8),
+                        Stack(
+                          children: [
+                            GestureDetector(
+                              onTap: () {},
+                              child: _buildIconContainer(Icons.notifications),
+                            ),
+                            Positioned(
+                              top: 2,
+                              right: 2,
+                              child: Container(
+                                padding: const EdgeInsets.all(3),
+                                decoration: const BoxDecoration(
+                                  color: Colors.red,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Text(
+                                  "3",
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 8,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(width: 8),
+                        GestureDetector(
+                          onTap: () async {
+                            await FirebaseAuth.instance.signOut();
+                            Navigator.of(
+                              context,
+                            ).pushReplacementNamed('/login');
+                          },
+                          child: _buildIconContainer(Icons.logout),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+
               Positioned(
                 top: screenHeight * 0.15,
                 left: 35,
@@ -249,36 +156,17 @@ class _homeScreenState extends State<homeScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              const Text(
-                                "Best Seller",
-                                style: TextStyle(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.bold,
+                          _sectionHeader(
+                            title: "Best Seller",
+                            onViewAll: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder:
+                                      (context) => const BestSellerScreen(),
                                 ),
-                              ),
-                              TextButton(
-                                onPressed: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder:
-                                          (context) => const BestSellerScreen(),
-                                    ),
-                                  );
-                                },
-                                child: const Text(
-                                  "View All >",
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Color(0xFF00D09E),
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                            ],
+                              );
+                            },
                           ),
                           const SizedBox(height: 15),
                           Wrap(
@@ -320,35 +208,16 @@ class _homeScreenState extends State<homeScreen> {
                             ),
                           ),
                           const SizedBox(height: 30),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              const Text(
-                                "Recommend",
-                                style: TextStyle(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.bold,
+                          _sectionHeader(
+                            title: "Recommend",
+                            onViewAll: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => RecommendScreen(),
                                 ),
-                              ),
-                              TextButton(
-                                onPressed: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => RecommendScreen(),
-                                    ),
-                                  );
-                                },
-                                child: const Text(
-                                  "View All >",
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Color(0xFF00D09E),
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                            ],
+                              );
+                            },
                           ),
                           const SizedBox(height: 15),
                           SizedBox(
@@ -388,32 +257,6 @@ class _homeScreenState extends State<homeScreen> {
     );
   }
 
-  static Widget _buildDrawerItem(
-    IconData icon,
-    String title, {
-    VoidCallback? onTap,
-  }) {
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.only(left: 15),
-          child: ListTile(
-            leading: _buildIconContainer(icon),
-            title: Text(title, style: const TextStyle(color: Colors.white)),
-            onTap: onTap,
-          ),
-        ),
-        const Divider(
-          color: Colors.white,
-          thickness: 1,
-          height: 10,
-          indent: 30,
-          endIndent: 30,
-        ),
-      ],
-    );
-  }
-
   static Widget _buildIconContainer(IconData icon) {
     return Container(
       padding: const EdgeInsets.all(5),
@@ -421,7 +264,33 @@ class _homeScreenState extends State<homeScreen> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(15),
       ),
-      child: Icon(icon, color: Color(0xFF00D09E)),
+      child: Icon(icon, color: const Color(0xFF00D09E)),
+    );
+  }
+
+  Widget _sectionHeader({
+    required String title,
+    required VoidCallback onViewAll,
+  }) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          title,
+          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+        ),
+        TextButton(
+          onPressed: onViewAll,
+          child: const Text(
+            "View All >",
+            style: TextStyle(
+              fontSize: 12,
+              color: Color(0xFF00D09E),
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+      ],
     );
   }
 

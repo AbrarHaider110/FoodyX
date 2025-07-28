@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:food_delivery/Screens/loginScreen.dart';
 
-class ThirdScreen extends StatelessWidget {
-  const ThirdScreen({Key? key}) : super(key: key);
+class FirstScreen extends StatelessWidget {
+  const FirstScreen({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -14,7 +14,7 @@ class ThirdScreen extends StatelessWidget {
       body: Stack(
         children: [
           Positioned.fill(
-            child: Image.asset("assets/ts.png", fit: BoxFit.cover),
+            child: Image.asset("assets/ss.png", fit: BoxFit.cover),
           ),
 
           Align(

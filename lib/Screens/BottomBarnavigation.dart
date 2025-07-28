@@ -15,7 +15,7 @@ class _bottomBarScreenState extends State<bottomBarScreen> {
   int _selectedIndex = 0;
 
   final List<Widget> _pages = [
-    homeScreen(),
+    HomeScreen(),
     BuffetScreen(),
     BestSellerScreen(),
     Center(child: Text("List Screen")),
@@ -87,7 +87,7 @@ class _bottomBarScreenState extends State<bottomBarScreen> {
                 icon: Padding(
                   padding: EdgeInsets.only(top: 5),
                   child: Image.asset(
-                    "assets/BBN4.png",
+                    "assets/BBN5.png",
                     width: 24,
                     height: 24,
                     fit: BoxFit.contain,
@@ -98,12 +98,7 @@ class _bottomBarScreenState extends State<bottomBarScreen> {
               BottomNavigationBarItem(
                 icon: Padding(
                   padding: EdgeInsets.only(top: 5),
-                  child: Image.asset(
-                    "assets/BBN5.png",
-                    width: 24,
-                    height: 24,
-                    fit: BoxFit.contain,
-                  ),
+                  child: Icon(Icons.person, size: 24, color: Color(0xFFF8F8F8)),
                 ),
                 label: '',
               ),

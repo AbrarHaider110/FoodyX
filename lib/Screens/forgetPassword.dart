@@ -121,23 +121,60 @@ class _NewPasswordScreenState extends State<NewPasswordScreen> {
                                     ),
                                     padding: const EdgeInsets.all(20),
                                   ),
-                                  onPressed: () {
-                                    FirebaseAuth.instance
-                                        .sendPasswordResetEmail(
-                                          email: _email.text,
-                                        );
-                                    if (_email.text.trim().isEmpty) {
-                                      showSnackbar(
+                                  onPressed: () async {
+                                    final email = _email.text.trim();
+
+                                    if (email.isEmpty) {
+                                      ScaffoldMessenger.of(
                                         context,
-                                        "Empty Textfield, Enter your email",
+                                      ).showSnackBar(
+                                        const SnackBar(
+                                          content: Text(
+                                            "Please enter your email.",
+                                          ),
+                                          backgroundColor: Colors.red,
+                                        ),
                                       );
                                       return;
                                     }
-                                    showSnackbar(
-                                      context,
-                                      "Password reset link sent!",
-                                      color: const Color(0xFF00D09E),
-                                    );
+
+                                    try {
+                                      await FirebaseAuth.instance
+                                          .sendPasswordResetEmail(email: email);
+
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        const SnackBar(
+                                          content: Text(
+                                            "A reset link has been sent.",
+                                          ),
+                                          backgroundColor: Color(0xFF00D09E),
+                                        ),
+                                      );
+                                    } on FirebaseAuthException catch (e) {
+                                      String message;
+
+                                      if (e.code == 'user-not-found') {
+                                        message =
+                                            "This email is not registered yet.";
+                                      } else if (e.code == 'invalid-email') {
+                                        message =
+                                            "The email address is not valid.";
+                                      } else {
+                                        message =
+                                            "An error occurred. Please try again.";
+                                      }
+
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        SnackBar(
+                                          content: Text(message),
+                                          backgroundColor: Colors.red,
+                                        ),
+                                      );
+                                    }
                                   },
                                   child: const Text(
                                     "Reset your Password",

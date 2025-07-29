@@ -3,6 +3,7 @@ import 'package:food_delivery/Screens/Buffet_Screen.dart';
 import 'package:food_delivery/Screens/HelpScreen.dart';
 import 'package:food_delivery/Screens/bestSellerScreen.dart';
 import 'package:food_delivery/Screens/homeScreen.dart';
+import 'package:food_delivery/Screens/profile_Screen.dart.dart';
 
 class bottomBarScreen extends StatefulWidget {
   const bottomBarScreen({Key? key}) : super(key: key);
@@ -18,8 +19,8 @@ class _bottomBarScreenState extends State<bottomBarScreen> {
     HomeScreen(),
     BuffetScreen(),
     BestSellerScreen(),
-    Center(child: Text("List Screen")),
     helpScreen(),
+    ProfileScreen(),
   ];
 
   void _onItemTapped(int index) {
@@ -39,7 +40,7 @@ class _bottomBarScreenState extends State<bottomBarScreen> {
           child: BottomNavigationBar(
             type: BottomNavigationBarType.fixed,
             backgroundColor: Color(0xFF00D09E),
-            selectedItemColor: Colors.white,
+            selectedItemColor: Colors.white70,
             unselectedItemColor: Colors.white70,
             currentIndex: _selectedIndex,
             onTap: _onItemTapped,
@@ -91,6 +92,7 @@ class _bottomBarScreenState extends State<bottomBarScreen> {
                     width: 24,
                     height: 24,
                     fit: BoxFit.contain,
+                    color: Color(0xFFF8F8F8),
                   ),
                 ),
                 label: '',
@@ -98,7 +100,7 @@ class _bottomBarScreenState extends State<bottomBarScreen> {
               BottomNavigationBarItem(
                 icon: Padding(
                   padding: EdgeInsets.only(top: 5),
-                  child: Icon(Icons.person, size: 24, color: Color(0xFFF8F8F8)),
+                  child: Icon(Icons.person_2_outlined, size: 24),
                 ),
                 label: '',
               ),

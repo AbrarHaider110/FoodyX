@@ -39,6 +39,7 @@ dependencies:
   firebase_core: ^3.15.2
   firebase_auth: ^5.7.0
   cloud_firestore: ^5.6.12
+  image_picker: ^1.1.2
 
 dev_dependencies:
   flutter_test:
@@ -101,6 +102,7 @@ flutter:
    - assets/BBN3.png
    - assets/BBN4.png
    - assets/BBN5.png
+   - assets/BB6.jpg
    - assets/ss.png
    - assets/ts.png
    - assets/cardIcon.png

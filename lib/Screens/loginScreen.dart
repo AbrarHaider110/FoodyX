@@ -189,12 +189,6 @@ class _LoginScreenState extends State<LoginScreen> {
                                         password: password,
                                       );
 
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: const Text('Sign In Successful'),
-                                      backgroundColor: const Color(0xFF00D09E),
-                                    ),
-                                  );
                                   Navigator.pushReplacement(
                                     context,
                                     MaterialPageRoute(

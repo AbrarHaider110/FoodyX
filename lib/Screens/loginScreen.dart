@@ -1,9 +1,8 @@
+import 'package:FoodyX/Screens/BottomBarnavigation.dart';
+import 'package:FoodyX/Screens/forgetPassword.dart';
+import 'package:FoodyX/Screens/signupScreen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:food_delivery/Screens/BottomBarnavigation.dart';
-import 'package:food_delivery/Screens/forgetPassword.dart';
-import 'package:food_delivery/Screens/homeScreen.dart';
-import 'package:food_delivery/Screens/signupScreen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({Key? key}) : super(key: key);

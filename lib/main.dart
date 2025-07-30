@@ -1,9 +1,9 @@
+import 'package:FoodyX/Provider/order_provider.dart';
+import 'package:FoodyX/Screens/loginScreen.dart';
+import 'package:FoodyX/Screens/splashScreen.dart' show SplashScreen;
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:food_delivery/Screens/splashScreen.dart';
-import 'package:food_delivery/Screens/loginScreen.dart';
 import 'package:provider/provider.dart';
-import 'package:food_delivery/provider/order_provider.dart';
 import 'firebase_options.dart';
 
 void main() async {

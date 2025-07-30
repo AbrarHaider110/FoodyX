@@ -1,5 +1,5 @@
+import 'package:FoodyX/Screens/detailScreen.dart';
 import 'package:flutter/material.dart';
-import 'package:food_delivery/Screens/detailScreen.dart';
 
 class RecommendScreen extends StatelessWidget {
   const RecommendScreen({Key? key}) : super(key: key);

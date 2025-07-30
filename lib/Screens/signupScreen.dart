@@ -1,7 +1,7 @@
+import 'package:FoodyX/Screens/loginScreen.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:food_delivery/Screens/loginScreen.dart';
 
 class signUpScreen extends StatefulWidget {
   const signUpScreen({Key? key}) : super(key: key);

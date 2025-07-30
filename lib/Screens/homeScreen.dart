@@ -1,7 +1,7 @@
+import 'package:FoodyX/Screens/bestSellerScreen.dart';
+import 'package:FoodyX/Screens/my_orders.dart';
+import 'package:FoodyX/Screens/recommend_Screen.dart';
 import 'package:flutter/material.dart';
-import 'package:food_delivery/Screens/bestSellerScreen.dart';
-import 'package:food_delivery/Screens/my_orders.dart';
-import 'package:food_delivery/Screens/recommend_Screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class HomeScreen extends StatefulWidget {

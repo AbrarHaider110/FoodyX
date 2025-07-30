@@ -1,9 +1,9 @@
+import 'package:FoodyX/Screens/Buffet_Screen.dart';
+import 'package:FoodyX/Screens/HelpScreen.dart';
+import 'package:FoodyX/Screens/bestSellerScreen.dart';
+import 'package:FoodyX/Screens/homeScreen.dart';
+import 'package:FoodyX/Screens/profile_Screen.dart.dart';
 import 'package:flutter/material.dart';
-import 'package:food_delivery/Screens/Buffet_Screen.dart';
-import 'package:food_delivery/Screens/HelpScreen.dart';
-import 'package:food_delivery/Screens/bestSellerScreen.dart';
-import 'package:food_delivery/Screens/homeScreen.dart';
-import 'package:food_delivery/Screens/profile_Screen.dart.dart';
 
 class bottomBarScreen extends StatefulWidget {
   const bottomBarScreen({Key? key}) : super(key: key);

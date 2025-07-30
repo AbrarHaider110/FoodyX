@@ -1,5 +1,5 @@
+import 'package:FoodyX/Screens/loginScreen.dart';
 import 'package:flutter/material.dart';
-import 'package:food_delivery/Screens/loginScreen.dart';
 
 class FirstScreen extends StatelessWidget {
   const FirstScreen({Key? key}) : super(key: key);

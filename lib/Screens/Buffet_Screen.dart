@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:food_delivery/Provider/order_provider.dart' as upper;
+import 'package:FoodyX/Provider/order_provider.dart' as upper;
 import 'detailScreen.dart';
 
 class BuffetScreen extends StatefulWidget {

@@ -1,5 +1,5 @@
+import 'package:FoodyX/Screens/detailScreen.dart';
 import 'package:flutter/material.dart';
-import 'package:food_delivery/Screens/detailScreen.dart';
 
 class BestSellerScreen extends StatefulWidget {
   const BestSellerScreen({Key? key}) : super(key: key);

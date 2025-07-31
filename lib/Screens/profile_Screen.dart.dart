@@ -1,6 +1,9 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -10,14 +13,24 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  final TextEditingController fullNameController = TextEditingController();
-  final TextEditingController userNameController = TextEditingController();
-  final TextEditingController contactController = TextEditingController();
-  final TextEditingController emailController = TextEditingController();
-  final TextEditingController passwordController = TextEditingController();
+  final fullNameController = TextEditingController();
+  final userNameController = TextEditingController();
+  final contactController = TextEditingController();
+  final emailController = TextEditingController();
+  final passwordController = TextEditingController();
 
   bool isLoading = false;
   File? profileImage;
+  String? imageUrl;
+  bool imageChanged = false;
+
+  final userId = FirebaseAuth.instance.currentUser!.uid;
+
+  @override
+  void initState() {
+    super.initState();
+    fetchUserProfile();
+  }
 
   @override
   void dispose() {
@@ -29,28 +42,100 @@ class _ProfileScreenState extends State<ProfileScreen> {
     super.dispose();
   }
 
-  void handleSignUp() {
+  Future<void> fetchUserProfile() async {
     setState(() => isLoading = true);
+    try {
+      // Fetch user data from Firestore
+      DocumentSnapshot userDoc =
+          await FirebaseFirestore.instance
+              .collection('users')
+              .doc(userId)
+              .get();
 
-    Future.delayed(const Duration(seconds: 2), () {
-      setState(() => isLoading = false);
-    });
+      if (userDoc.exists) {
+        final data = userDoc.data() as Map<String, dynamic>;
+        // Set controller values with user data
+        fullNameController.text =
+            data['fullName'] ??
+            FirebaseAuth.instance.currentUser?.displayName ??
+            '';
+        userNameController.text = data['userName'] ?? '';
+        contactController.text = data['contact'] ?? '';
+        emailController.text =
+            data['email'] ?? FirebaseAuth.instance.currentUser?.email ?? '';
+        passwordController.text = data['password'] ?? '';
+      }
+
+      // Try to fetch profile image from Storage
+      try {
+        final ref = FirebaseStorage.instance.ref().child(
+          'profileImages/$userId.jpg',
+        );
+        imageUrl = await ref.getDownloadURL();
+      } catch (e) {
+        // No image exists, use default
+        imageUrl = null;
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error fetching profile: $e')));
+    }
+    setState(() => isLoading = false);
   }
 
-  void handleChange() {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('Change button pressed')));
+  Future<void> handleChange() async {
+    setState(() => isLoading = true);
+    try {
+      // Update user data in Firestore
+      final data = {
+        'fullName': fullNameController.text,
+        'userName': userNameController.text,
+        'contact': contactController.text,
+        'email': emailController.text,
+        'password': passwordController.text,
+        'updatedAt': FieldValue.serverTimestamp(),
+      };
+
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(userId)
+          .set(data, SetOptions(merge: true));
+
+      if (imageChanged) {
+        final ref = FirebaseStorage.instance.ref().child(
+          'profileImages/$userId.jpg',
+        );
+        if (profileImage != null) {
+          await ref.putFile(profileImage!);
+          imageUrl = await ref.getDownloadURL();
+        } else {
+          await ref.delete();
+          imageUrl = null;
+        }
+        setState(() => imageChanged = false);
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Profile updated successfully')),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Failed to update profile: $e')));
+    }
+    setState(() => isLoading = false);
   }
 
   Future<void> pickImage(ImageSource source) async {
     final picker = ImagePicker();
     final pickedFile = await picker.pickImage(source: source);
-
     if (pickedFile != null) {
-      setState(() => profileImage = File(pickedFile.path));
+      setState(() {
+        profileImage = File(pickedFile.path);
+        imageChanged = true;
+      });
     }
-
     Navigator.pop(context);
   }
 
@@ -71,6 +156,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   title: const Text('Take a Photo'),
                   onTap: () => pickImage(ImageSource.camera),
                 ),
+                if (imageUrl != null || profileImage != null)
+                  ListTile(
+                    leading: const Icon(Icons.delete, color: Colors.red),
+                    title: const Text(
+                      'Remove Photo',
+                      style: TextStyle(color: Colors.red),
+                    ),
+                    onTap: () {
+                      setState(() {
+                        profileImage = null;
+                        imageUrl = null;
+                        imageChanged = true;
+                      });
+                      Navigator.pop(context);
+                    },
+                  ),
               ],
             ),
           ),
@@ -149,118 +250,154 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     topRight: Radius.circular(30),
                   ),
                 ),
-                child: SingleChildScrollView(
-                  child: Column(
-                    children: [
-                      Stack(
-                        alignment: Alignment.center,
-                        children: [
-                          Container(
-                            width: screenWidth * 0.4,
-                            height: screenWidth * 0.4,
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(16),
-                              border: Border.all(
-                                color: const Color(0xFF00D09E),
-                                width: 2,
-                              ),
-                              color: Colors.white,
-                            ),
-                            child:
-                                profileImage != null
-                                    ? ClipRRect(
-                                      borderRadius: BorderRadius.circular(14),
-                                      child: Image.file(
-                                        profileImage!,
-                                        width: screenWidth * 0.4,
-                                        height: screenWidth * 0.4,
-                                        fit: BoxFit.cover,
+                child:
+                    isLoading
+                        ? const Center(child: CircularProgressIndicator())
+                        : SingleChildScrollView(
+                          child: Column(
+                            children: [
+                              Stack(
+                                alignment: Alignment.center,
+                                children: [
+                                  Container(
+                                    width: screenWidth * 0.4,
+                                    height: screenWidth * 0.4,
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(16),
+                                      border: Border.all(
+                                        color: const Color(0xFF00D09E),
+                                        width: 2,
                                       ),
-                                    )
-                                    : Icon(
-                                      Icons.person,
-                                      size: screenWidth * 0.3,
-                                      color: const Color(0xFF00D09E),
+                                      color: Colors.white,
                                     ),
-                          ),
-                          Positioned(
-                            bottom: 8,
-                            right: 8,
-                            child: GestureDetector(
-                              onTap: showImageSourceActionSheet,
-                              child: Container(
-                                height: 40,
-                                width: 40,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: Colors.white,
-                                  border: Border.all(
-                                    color: const Color(0xFF00D09E),
-                                    width: 2,
+                                    child: ClipRRect(
+                                      borderRadius: BorderRadius.circular(14),
+                                      child:
+                                          profileImage != null
+                                              ? Image.file(
+                                                profileImage!,
+                                                width: screenWidth * 0.4,
+                                                height: screenWidth * 0.4,
+                                                fit: BoxFit.cover,
+                                              )
+                                              : imageUrl != null
+                                              ? Image.network(
+                                                imageUrl!,
+                                                width: screenWidth * 0.4,
+                                                height: screenWidth * 0.4,
+                                                fit: BoxFit.cover,
+                                                loadingBuilder: (
+                                                  BuildContext context,
+                                                  Widget child,
+                                                  ImageChunkEvent?
+                                                  loadingProgress,
+                                                ) {
+                                                  if (loadingProgress == null)
+                                                    return child;
+                                                  return Center(
+                                                    child: CircularProgressIndicator(
+                                                      value:
+                                                          loadingProgress
+                                                                      .expectedTotalBytes !=
+                                                                  null
+                                                              ? loadingProgress
+                                                                      .cumulativeBytesLoaded /
+                                                                  loadingProgress
+                                                                      .expectedTotalBytes!
+                                                              : null,
+                                                    ),
+                                                  );
+                                                },
+                                              )
+                                              : Icon(
+                                                Icons.person,
+                                                size: screenWidth * 0.3,
+                                                color: const Color(0xFF00D09E),
+                                              ),
+                                    ),
                                   ),
-                                ),
-                                child: Icon(
-                                  Icons.camera_alt,
-                                  size: 20,
-                                  color: const Color(0xFF00D09E),
-                                ),
+                                  Positioned(
+                                    bottom: 8,
+                                    right: 8,
+                                    child: GestureDetector(
+                                      onTap: showImageSourceActionSheet,
+                                      child: Container(
+                                        height: 40,
+                                        width: 40,
+                                        decoration: BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          color: Colors.white,
+                                          border: Border.all(
+                                            color: const Color(0xFF00D09E),
+                                            width: 2,
+                                          ),
+                                        ),
+                                        child: const Icon(
+                                          Icons.camera_alt,
+                                          size: 20,
+                                          color: Color(0xFF00D09E),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
-                            ),
+                              const SizedBox(height: 24),
+                              buildTextField(
+                                label: "Full Name",
+                                controller: fullNameController,
+                              ),
+                              buildTextField(
+                                label: "Username",
+                                controller: userNameController,
+                              ),
+                              buildTextField(
+                                label: "Contact",
+                                controller: contactController,
+                              ),
+                              buildTextField(
+                                label: "Email",
+                                controller: emailController,
+                              ),
+                              buildTextField(
+                                label: "Password",
+                                controller: passwordController,
+                                obscure: true,
+                              ),
+                              SizedBox(height: screenHeight * 0.04),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: ElevatedButton(
+                                      onPressed: handleChange,
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: const Color(
+                                          0xFF00D09E,
+                                        ),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(
+                                            40,
+                                          ),
+                                        ),
+                                        padding: const EdgeInsets.symmetric(
+                                          vertical: 15,
+                                        ),
+                                      ),
+                                      child: const Text(
+                                        "Change",
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 16,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
-                      const SizedBox(height: 24),
-                      buildTextField(
-                        label: "Full Name",
-                        controller: fullNameController,
-                      ),
-                      buildTextField(
-                        label: "Username",
-                        controller: userNameController,
-                      ),
-                      buildTextField(
-                        label: "Contact",
-                        controller: contactController,
-                      ),
-                      buildTextField(
-                        label: "Email",
-                        controller: emailController,
-                      ),
-                      buildTextField(
-                        label: "Password",
-                        controller: passwordController,
-                        obscure: true,
-                      ),
-                      SizedBox(height: screenHeight * 0.04),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: ElevatedButton(
-                              onPressed: handleChange,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF00D09E),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(40),
-                                ),
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 15,
-                                ),
-                              ),
-                              child: const Text(
-                                "Change",
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
+                        ),
               ),
             ),
           ],

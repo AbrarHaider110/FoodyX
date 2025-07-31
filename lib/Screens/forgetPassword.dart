@@ -18,26 +18,51 @@ class _NewPasswordScreenState extends State<NewPasswordScreen> {
     super.dispose();
   }
 
-  void showSnackbar(
-    BuildContext context,
-    String message, {
-    Color color = Colors.red,
-  }) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message, style: const TextStyle(color: Colors.white)),
-        backgroundColor: color,
-        duration: const Duration(seconds: 2),
-      ),
-    );
+  void showSnackbar(String message, {Color color = Colors.red}) {
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message), backgroundColor: color));
+  }
+
+  Future<void> resetPassword() async {
+    final email = _email.text.trim();
+
+    if (email.isEmpty) {
+      showSnackbar("Please enter your email.");
+      return;
+    }
+
+    try {
+      await FirebaseAuth.instance.sendPasswordResetEmail(email: email);
+
+      showSnackbar(
+        "A reset link has been sent.",
+        color: const Color(0xFF00D09E),
+      );
+
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const LoginScreen()),
+      );
+    } on FirebaseAuthException catch (e) {
+      String message;
+
+      if (e.code == 'user-not-found') {
+        message = "This email is not registered yet.";
+      } else if (e.code == 'invalid-email') {
+        message = "The email address is not valid.";
+      } else {
+        message = "An error occurred. Please try again.";
+      }
+
+      showSnackbar(message);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     double screenHeight = MediaQuery.of(context).size.height;
     double screenWidth = MediaQuery.of(context).size.width;
-    bool isPortrait =
-        MediaQuery.of(context).orientation == Orientation.portrait;
 
     return Scaffold(
       body: Container(
@@ -90,6 +115,7 @@ class _NewPasswordScreenState extends State<NewPasswordScreen> {
                             ),
                             TextField(
                               controller: _email,
+                              keyboardType: TextInputType.emailAddress,
                               decoration: const InputDecoration(
                                 hintText: "Enter your Email",
                                 hintStyle: TextStyle(color: Colors.grey),
@@ -122,69 +148,7 @@ class _NewPasswordScreenState extends State<NewPasswordScreen> {
                                     ),
                                     padding: const EdgeInsets.all(20),
                                   ),
-                                  onPressed: () async {
-                                    final email = _email.text.trim();
-
-                                    if (email.isEmpty) {
-                                      ScaffoldMessenger.of(
-                                        context,
-                                      ).showSnackBar(
-                                        const SnackBar(
-                                          content: Text(
-                                            "Please enter your email.",
-                                          ),
-                                          backgroundColor: Colors.red,
-                                        ),
-                                      );
-                                      return;
-                                    }
-
-                                    try {
-                                      await FirebaseAuth.instance
-                                          .sendPasswordResetEmail(email: email);
-
-                                      ScaffoldMessenger.of(
-                                        context,
-                                      ).showSnackBar(
-                                        const SnackBar(
-                                          content: Text(
-                                            "A reset link has been sent.",
-                                          ),
-                                          backgroundColor: Color(0xFF00D09E),
-                                          duration: Duration(seconds: 2),
-                                        ),
-                                      );
-                                      Navigator.pushReplacement(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder:
-                                              (context) => const LoginScreen(),
-                                        ),
-                                      );
-                                    } on FirebaseAuthException catch (e) {
-                                      String message;
-
-                                      if (e.code == 'user-not-found') {
-                                        message =
-                                            "This email is not registered yet.";
-                                      } else if (e.code == 'invalid-email') {
-                                        message =
-                                            "The email address is not valid.";
-                                      } else {
-                                        message =
-                                            "An error occurred. Please try again.";
-                                      }
-
-                                      ScaffoldMessenger.of(
-                                        context,
-                                      ).showSnackBar(
-                                        SnackBar(
-                                          content: Text(message),
-                                          backgroundColor: Colors.red,
-                                        ),
-                                      );
-                                    }
-                                  },
+                                  onPressed: resetPassword,
                                   child: const Text(
                                     "Reset your Password",
                                     style: TextStyle(

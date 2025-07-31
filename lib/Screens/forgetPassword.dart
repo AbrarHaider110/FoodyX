@@ -1,3 +1,4 @@
+import 'package:FoodyX/Screens/loginScreen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
@@ -150,6 +151,14 @@ class _NewPasswordScreenState extends State<NewPasswordScreen> {
                                             "A reset link has been sent.",
                                           ),
                                           backgroundColor: Color(0xFF00D09E),
+                                          duration: Duration(seconds: 2),
+                                        ),
+                                      );
+                                      Navigator.pushReplacement(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder:
+                                              (context) => const LoginScreen(),
                                         ),
                                       );
                                     } on FirebaseAuthException catch (e) {

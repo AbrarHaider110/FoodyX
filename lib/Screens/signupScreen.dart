@@ -84,8 +84,9 @@ class _signUpScreenState extends State<signUpScreen> {
                       SizedBox(height: screenSize.height * 0.01),
                       Center(
                         child: Builder(
-                          builder:
-                              (context) => SizedBox(
+                          builder: (context) {
+                            return Center(
+                              child: SizedBox(
                                 width: screenSize.width * 0.7,
                                 child: ElevatedButton(
                                   onPressed: () async {
@@ -114,38 +115,56 @@ class _signUpScreenState extends State<signUpScreen> {
                                     }
 
                                     try {
-                                      await FirebaseAuth.instance
+                                      final userCredential = await FirebaseAuth
+                                          .instance
                                           .createUserWithEmailAndPassword(
                                             email: email,
                                             password: password,
                                           );
 
-                                      ScaffoldMessenger.of(
-                                        context,
-                                      ).showSnackBar(
-                                        const SnackBar(
-                                          content: Text('Sign Up Successful'),
-                                          backgroundColor: Color(0xFF00D09E),
-                                        ),
-                                      );
+                                      final uid = userCredential.user!.uid;
 
-                                      Navigator.pushReplacement(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (_) => const LoginScreen(),
-                                        ),
-                                      );
-                                    } on FirebaseAuthException catch (e) {
-                                      ScaffoldMessenger.of(
-                                        context,
-                                      ).showSnackBar(
-                                        SnackBar(
-                                          content: Text(
-                                            e.message ?? 'Signup failed',
+                                      await FirebaseFirestore.instance
+                                          .collection('users')
+                                          .doc(uid)
+                                          .set({
+                                            'name': name,
+                                            'email': email,
+                                            'mobile': mobile,
+                                            'dob': dob,
+                                            'createdAt': Timestamp.now(),
+                                          });
+
+                                      if (context.mounted) {
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
+                                          const SnackBar(
+                                            content: Text('Sign Up Successful'),
+                                            backgroundColor: Color(0xFF00D09E),
                                           ),
-                                          backgroundColor: Colors.red,
-                                        ),
-                                      );
+                                        );
+
+                                        Navigator.pushReplacement(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (_) => const LoginScreen(),
+                                          ),
+                                        );
+                                      }
+                                    } on FirebaseAuthException catch (e) {
+                                      if (context.mounted) {
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
+                                          SnackBar(
+                                            content: Text(
+                                              e.message ?? 'Signup failed',
+                                            ),
+                                            backgroundColor: Colors.red,
+                                          ),
+                                        );
+                                      }
                                     }
                                   },
                                   style: ElevatedButton.styleFrom(
@@ -167,8 +186,11 @@ class _signUpScreenState extends State<signUpScreen> {
                                   ),
                                 ),
                               ),
+                            );
+                          },
                         ),
                       ),
+
                       Center(
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,

@@ -9,71 +9,81 @@ class BestSellerScreen extends StatefulWidget {
 }
 
 class _BestSellerScreenState extends State<BestSellerScreen> {
-  List<List<String>> displayImages = [
-    [
-      "assets/f1.png",
-      "assets/small-Meals.png",
-      "\$15",
-      "Veg Roll",
-      "A delicious and crispy vegetarian roll filled with fresh veggies and sauces.",
-      "5.0",
-    ],
-    [
-      "assets/f2.png",
-      "assets/small-Desserts.png",
-      "\$12",
-      "Small Bruschetta",
-      "Toasted bread topped with fresh tomatoes and basil.",
-      "4.0",
-    ],
-    [
-      "assets/f3.png",
-      "assets/small-Desserts.png",
-      "\$15",
-      "Grilled Skewers",
-      "Tender skewers grilled with seasonal veggies and herbs.",
-      "5.0",
-    ],
-    [
-      "assets/f4.png",
-      "assets/small-Meals.png",
-      "\$10",
-      "BBQ Tacos",
-      "Spicy barbecue chicken with creamy white sauce.",
-      "5.0",
-    ],
-    [
-      "assets/f5.png",
-      "assets/small-Desserts.png",
-      "\$11",
-      "Broccoli Lasagna",
-      "Layers of pasta with broccoli, cream, and cheese.",
-      "5.0",
-    ],
-    [
-      "assets/f6.png",
-      "assets/small-Desserts.png",
-      "\$16",
-      "Ice Cream",
-      "Vanilla and chocolate mix with crunchy toppings.",
-      "4.0",
-    ],
-    [
-      "assets/f7.png",
-      "assets/small-Desserts.png",
-      "\$18",
-      "Brownie",
-      "Fudgy chocolate brownie with dark cocoa.",
-      "5.0",
-    ],
-    [
-      "assets/f8.png",
-      "assets/small-Desserts.png",
-      "\$20",
-      "Cheese Burger",
-      "Juicy beef patty with melted cheddar and veggies.",
-      "4.9",
-    ],
+  // Data structure for food items
+  final List<FoodItem> foodItems = [
+    FoodItem(
+      image: "assets/f1.png",
+      icon: "assets/small-Meals.png",
+      price: "\$15",
+      title: "Veg Roll",
+      description:
+          "A delicious and crispy vegetarian roll filled with fresh veggies and sauces.",
+      rating: "5.0",
+      productId: "1",
+    ),
+    FoodItem(
+      image: "assets/f2.png",
+      icon: "assets/small-Desserts.png",
+      price: "\$12",
+      title: "Small Bruschetta",
+      description: "Toasted bread topped with fresh tomatoes and basil.",
+      rating: "4.0",
+      productId: "2",
+    ),
+    FoodItem(
+      image: "assets/f3.png",
+      icon: "assets/small-Desserts.png",
+      price: "\$15",
+      title: "Grilled Skewers",
+      description: "Tender skewers grilled with seasonal veggies and herbs.",
+      rating: "5.0",
+      productId: "3",
+    ),
+    FoodItem(
+      image: "assets/f4.png",
+      icon: "assets/small-Meals.png",
+      price: "\$10",
+      title: "BBQ Tacos",
+      description: "Spicy barbecue chicken with creamy white sauce.",
+      rating: "5.0",
+      productId: "4",
+    ),
+    FoodItem(
+      image: "assets/f5.png",
+      icon: "assets/small-Desserts.png",
+      price: "\$11",
+      title: "Broccoli Lasagna",
+      description: "Layers of pasta with broccoli, cream, and cheese.",
+      rating: "5.0",
+      productId: "5",
+    ),
+    FoodItem(
+      image: "assets/f6.png",
+      icon: "assets/small-Desserts.png",
+      price: "\$16",
+      title: "Ice Cream",
+      description: "Vanilla and chocolate mix with crunchy toppings.",
+      rating: "4.0",
+      productId: "6",
+    ),
+    FoodItem(
+      image: "assets/f7.png",
+      icon: "assets/small-Desserts.png",
+      price: "\$18",
+      title: "Brownie",
+      description: "Fudgy chocolate brownie with dark cocoa.",
+      rating: "5.0",
+      productId: "7",
+    ),
+    FoodItem(
+      image: "assets/f8.png",
+      icon: "assets/small-Desserts.png",
+      price: "\$20",
+      title: "Cheese Burger",
+      description: "Juicy beef patty with melted cheddar and veggies.",
+      rating: "4.9",
+      productId: "8",
+    ),
   ];
 
   List<bool> isExpandedList = [];
@@ -81,7 +91,7 @@ class _BestSellerScreenState extends State<BestSellerScreen> {
   @override
   void initState() {
     super.initState();
-    isExpandedList = List.generate(displayImages.length, (_) => false);
+    isExpandedList = List.generate(foodItems.length, (_) => false);
   }
 
   @override
@@ -139,20 +149,11 @@ class _BestSellerScreenState extends State<BestSellerScreen> {
                     Wrap(
                       spacing: 12,
                       runSpacing: 12,
-                      children: List.generate(displayImages.length, (index) {
-                        final item = displayImages[index];
+                      children: List.generate(foodItems.length, (index) {
+                        final item = foodItems[index];
                         return SizedBox(
                           width: (screenWidth - 36) / 2,
-                          child: _buildCard(
-                            index,
-                            image: item[0],
-                            icon: item[1],
-                            price: item[2],
-                            title: item[3],
-                            subtitle: item[4],
-                            rating: item[5],
-                            context: context,
-                          ),
+                          child: _buildFoodItemCard(index, item, context),
                         );
                       }),
                     ),
@@ -166,20 +167,13 @@ class _BestSellerScreenState extends State<BestSellerScreen> {
     );
   }
 
-  Widget _buildCard(
-    int index, {
-    required String image,
-    required String icon,
-    required String price,
-    required String title,
-    required String subtitle,
-    required String rating,
-    required BuildContext context,
-  }) {
+  Widget _buildFoodItemCard(int index, FoodItem item, BuildContext context) {
     final isExpanded = isExpandedList[index];
-    final words = subtitle.split(' ');
-    final shortDesc =
-        words.length > 4 ? words.sublist(0, 4).join(' ') + '...' : subtitle;
+    final words = item.description.split(' ');
+    final shortDescription =
+        words.length > 4
+            ? words.sublist(0, 4).join(' ') + '...'
+            : item.description;
 
     return AnimatedSize(
       duration: const Duration(milliseconds: 300),
@@ -208,11 +202,12 @@ class _BestSellerScreenState extends State<BestSellerScreen> {
                   MaterialPageRoute(
                     builder:
                         (_) => DetailScreen(
-                          image: image,
-                          price: price,
-                          title: title,
-                          subtitle: subtitle,
-                          rating: rating,
+                          image: item.image,
+                          price: item.price,
+                          title: item.title,
+                          subtitle: item.description,
+                          rating: item.rating,
+                          productId: item.productId,
                         ),
                   ),
                 );
@@ -222,7 +217,7 @@ class _BestSellerScreenState extends State<BestSellerScreen> {
                   ClipRRect(
                     borderRadius: BorderRadius.circular(15),
                     child: Image.asset(
-                      image,
+                      item.image,
                       fit: BoxFit.cover,
                       width: double.infinity,
                       height: 140,
@@ -235,7 +230,7 @@ class _BestSellerScreenState extends State<BestSellerScreen> {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Image.asset(icon, width: 30, height: 30),
+                        Image.asset(item.icon, width: 30, height: 30),
                         const Icon(Icons.favorite, color: Color(0xFFE95322)),
                       ],
                     ),
@@ -253,7 +248,7 @@ class _BestSellerScreenState extends State<BestSellerScreen> {
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
-                        price,
+                        item.price,
                         style: const TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
@@ -271,7 +266,7 @@ class _BestSellerScreenState extends State<BestSellerScreen> {
                 SizedBox(
                   width: 100,
                   child: Text(
-                    title,
+                    item.title,
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
@@ -297,7 +292,7 @@ class _BestSellerScreenState extends State<BestSellerScreen> {
                       ),
                       const SizedBox(width: 4),
                       Text(
-                        rating,
+                        item.rating,
                         style: const TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
@@ -315,7 +310,7 @@ class _BestSellerScreenState extends State<BestSellerScreen> {
               children: [
                 Expanded(
                   child: Text(
-                    isExpanded ? subtitle : shortDesc,
+                    isExpanded ? item.description : shortDescription,
                     style: const TextStyle(fontSize: 14, color: Colors.grey),
                   ),
                 ),
@@ -354,4 +349,25 @@ class _BestSellerScreenState extends State<BestSellerScreen> {
       ),
     );
   }
+}
+
+// Data model for food items
+class FoodItem {
+  final String image;
+  final String icon;
+  final String price;
+  final String title;
+  final String description;
+  final String rating;
+  final String productId;
+
+  FoodItem({
+    required this.image,
+    required this.icon,
+    required this.price,
+    required this.title,
+    required this.description,
+    required this.rating,
+    required this.productId,
+  });
 }

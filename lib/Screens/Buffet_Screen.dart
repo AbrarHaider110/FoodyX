@@ -13,34 +13,40 @@ class BuffetScreen extends StatefulWidget {
 class _BuffetScreenState extends State<BuffetScreen> {
   List<bool> expandedItems = [];
 
-  final List<List<String>> displayImages = [
-    [
-      "assets/1.png",
-      "\$15",
-      "Mexican Appetizer",
-      "Crispy tortilla chips generously topped with spicy salsa, melted cheese, and guacamole—perfectly seasoned for a bold Mexican bite.",
-      "5.0",
-    ],
-    [
-      "assets/2.png",
-      "\$12",
-      "Pork Skewer",
-      "Juicy pork skewers marinated in herbs and grilled to perfection, served with tangy dipping sauce and fresh salad on the side.",
-      "4.8",
-    ],
-    [
-      "assets/3.png",
-      "\$15",
-      "Fresh Prawn Ceviche",
-      "Delightfully zesty shrimp ceviche marinated in citrus with diced tomatoes, onions, and cilantro—served chilled for a refreshing kick.",
-      "4.9",
-    ],
+  final List<Map<String, dynamic>> displayItems = [
+    {
+      'image': "assets/1.png",
+      'price': "\$15",
+      'title': "Mexican Appetizer",
+      'subtitle':
+          "Crispy tortilla chips generously topped with spicy salsa, melted cheese, and guacamole—perfectly seasoned for a bold Mexican bite.",
+      'rating': "5.0",
+      'id': "mexican_appetizer_001",
+    },
+    {
+      'image': "assets/2.png",
+      'price': "\$12",
+      'title': "Pork Skewer",
+      'subtitle':
+          "Juicy pork skewers marinated in herbs and grilled to perfection, served with tangy dipping sauce and fresh salad on the side.",
+      'rating': "4.8",
+      'id': "pork_skewer_002",
+    },
+    {
+      'image': "assets/3.png",
+      'price': "\$15",
+      'title': "Fresh Prawn Ceviche",
+      'subtitle':
+          "Delightfully zesty shrimp ceviche marinated in citrus with diced tomatoes, onions, and cilantro—served chilled for a refreshing kick.",
+      'rating': "4.9",
+      'id': "prawn_ceviche_003",
+    },
   ];
 
   @override
   void initState() {
     super.initState();
-    expandedItems = List.filled(displayImages.length, false);
+    expandedItems = List.filled(displayItems.length, false);
   }
 
   @override
@@ -88,7 +94,7 @@ class _BuffetScreenState extends State<BuffetScreen> {
               child: Padding(
                 padding: const EdgeInsets.all(12),
                 child: ListView.builder(
-                  itemCount: displayImages.length,
+                  itemCount: displayItems.length,
                   itemBuilder: (context, index) {
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 16),
@@ -105,7 +111,7 @@ class _BuffetScreenState extends State<BuffetScreen> {
   }
 
   Widget _buildItem(BuildContext context, int index) {
-    final item = displayImages[index];
+    final item = displayItems[index];
     final isExpanded = expandedItems[index];
 
     return Container(
@@ -132,11 +138,12 @@ class _BuffetScreenState extends State<BuffetScreen> {
                 MaterialPageRoute(
                   builder:
                       (_) => DetailScreen(
-                        image: item[0],
-                        price: item[1],
-                        title: item[2],
-                        subtitle: item[3],
-                        rating: item[4],
+                        image: item['image'],
+                        price: item['price'],
+                        title: item['title'],
+                        subtitle: item['subtitle'],
+                        rating: item['rating'],
+                        productId: item['id'], // Added productId
                       ),
                 ),
               );
@@ -146,7 +153,7 @@ class _BuffetScreenState extends State<BuffetScreen> {
                 ClipRRect(
                   borderRadius: BorderRadius.circular(15),
                   child: Image.asset(
-                    item[0],
+                    item['image'],
                     fit: BoxFit.cover,
                     width: double.infinity,
                     height: 180,
@@ -165,7 +172,7 @@ class _BuffetScreenState extends State<BuffetScreen> {
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
-                      item[1],
+                      item['price'],
                       style: const TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.bold,
@@ -182,7 +189,7 @@ class _BuffetScreenState extends State<BuffetScreen> {
             children: [
               Expanded(
                 child: Text(
-                  item[2],
+                  item['title'],
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
@@ -200,7 +207,7 @@ class _BuffetScreenState extends State<BuffetScreen> {
                     const Icon(Icons.star, size: 12, color: Color(0xFFFFD700)),
                     const SizedBox(width: 4),
                     Text(
-                      item[4],
+                      item['rating'],
                       style: const TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.bold,
@@ -217,7 +224,7 @@ class _BuffetScreenState extends State<BuffetScreen> {
             children: [
               Expanded(
                 child: Text(
-                  item[3],
+                  item['subtitle'],
                   maxLines: isExpanded ? null : 1,
                   overflow:
                       isExpanded ? TextOverflow.visible : TextOverflow.ellipsis,
@@ -246,9 +253,9 @@ class _BuffetScreenState extends State<BuffetScreen> {
             child: InkWell(
               onTap: () {
                 final newOrder = upper.Order(
-                  title: item[2],
-                  imageUrl: item[0],
-                  price: double.parse(item[1].replaceAll('\$', '')),
+                  title: item['title'],
+                  imageUrl: item['image'],
+                  price: double.parse(item['price'].replaceAll('\$', '')),
                   quantity: 1,
                 );
 
@@ -257,7 +264,6 @@ class _BuffetScreenState extends State<BuffetScreen> {
                   listen: false,
                 ).addOrder(newOrder);
               },
-
               child: const CircleAvatar(
                 radius: 14,
                 backgroundColor: Color(0xFF00D09E),

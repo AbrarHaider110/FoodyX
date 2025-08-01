@@ -13,235 +13,271 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  final fullNameController = TextEditingController();
-  final userNameController = TextEditingController();
-  final contactController = TextEditingController();
-  final emailController = TextEditingController();
-  final passwordController = TextEditingController();
-
   bool isLoading = false;
   File? profileImage;
   String? imageUrl;
-  bool imageChanged = false;
-
-  final userId = FirebaseAuth.instance.currentUser!.uid;
+  final userId = FirebaseAuth.instance.currentUser?.uid;
+  Map<String, dynamic> userData = {
+    'fullName': '',
+    'userName': '',
+    'contact': '',
+    'email': '',
+  };
+  final Map<String, TextEditingController> _controllers = {};
 
   @override
   void initState() {
     super.initState();
-    fetchUserProfile();
+    _initializeControllers();
+    if (userId != null) {
+      _fetchUserProfile();
+    }
   }
 
-  @override
-  void dispose() {
-    fullNameController.dispose();
-    userNameController.dispose();
-    contactController.dispose();
-    emailController.dispose();
-    passwordController.dispose();
-    super.dispose();
+  void _initializeControllers() {
+    _controllers['fullName'] = TextEditingController();
+    _controllers['userName'] = TextEditingController();
+    _controllers['contact'] = TextEditingController();
+    _controllers['email'] = TextEditingController();
   }
 
-  Future<void> fetchUserProfile() async {
+  Future<void> _fetchUserProfile() async {
     setState(() => isLoading = true);
-    try {
-      // Fetch user data from Firestore
-      DocumentSnapshot userDoc =
-          await FirebaseFirestore.instance
-              .collection('users')
-              .doc(userId)
-              .get();
+    const maxRetries = 3;
+    int attempt = 0;
 
-      if (userDoc.exists) {
-        final data = userDoc.data() as Map<String, dynamic>;
-        // Set controller values with user data
-        fullNameController.text =
-            data['fullName'] ??
-            FirebaseAuth.instance.currentUser?.displayName ??
-            '';
-        userNameController.text = data['userName'] ?? '';
-        contactController.text = data['contact'] ?? '';
-        emailController.text =
-            data['email'] ?? FirebaseAuth.instance.currentUser?.email ?? '';
-        passwordController.text = data['password'] ?? '';
+    while (attempt < maxRetries) {
+      try {
+        final userDoc =
+            await FirebaseFirestore.instance
+                .collection('users')
+                .doc(userId)
+                .get();
+
+        if (userDoc.exists) {
+          setState(() {
+            userData = userDoc.data() as Map<String, dynamic>;
+            _updateControllers();
+          });
+        }
+
+        try {
+          final ref = FirebaseStorage.instance.ref().child(
+            'profileImages/$userId.jpg',
+          );
+          imageUrl = await ref.getDownloadURL();
+          setState(() {}); // refresh image
+        } catch (_) {
+          imageUrl = null;
+        }
+
+        break; // success
+      } catch (e) {
+        attempt++;
+        if (attempt >= maxRetries) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error loading profile: ${e.toString()}')),
+          );
+        } else {
+          await Future.delayed(
+            Duration(seconds: 2 * attempt),
+          ); // exponential backoff
+        }
+      } finally {
+        setState(() => isLoading = false);
       }
+    }
+  }
 
-      // Try to fetch profile image from Storage
+  void _updateControllers() {
+    _controllers['fullName']?.text = userData['fullName'] ?? '';
+    _controllers['userName']?.text = userData['userName'] ?? '';
+    _controllers['contact']?.text = userData['contact'] ?? '';
+    _controllers['email']?.text =
+        userData['email'] ?? FirebaseAuth.instance.currentUser?.email ?? '';
+  }
+
+  Future<void> _pickImage(ImageSource source) async {
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(source: source);
+    if (pickedFile != null) {
+      setState(() => profileImage = File(pickedFile.path));
+      await _saveProfileImage();
+    }
+  }
+
+  Future<void> _saveProfileImage() async {
+    if (profileImage == null || userId == null) return;
+    setState(() => isLoading = true);
+    const maxRetries = 3;
+    int attempt = 0;
+
+    while (attempt < maxRetries) {
       try {
         final ref = FirebaseStorage.instance.ref().child(
           'profileImages/$userId.jpg',
         );
+        await ref.putFile(profileImage!);
         imageUrl = await ref.getDownloadURL();
-      } catch (e) {
-        // No image exists, use default
-        imageUrl = null;
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Error fetching profile: $e')));
-    }
-    setState(() => isLoading = false);
-  }
 
-  Future<void> handleChange() async {
-    setState(() => isLoading = true);
-    try {
-      // Update user data in Firestore
-      final data = {
-        'fullName': fullNameController.text,
-        'userName': userNameController.text,
-        'contact': contactController.text,
-        'email': emailController.text,
-        'password': passwordController.text,
-        'updatedAt': FieldValue.serverTimestamp(),
-      };
-
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(userId)
-          .set(data, SetOptions(merge: true));
-
-      if (imageChanged) {
-        final ref = FirebaseStorage.instance.ref().child(
-          'profileImages/$userId.jpg',
+        await FirebaseFirestore.instance.collection('users').doc(userId).update(
+          {'profileImage': imageUrl},
         );
-        if (profileImage != null) {
-          await ref.putFile(profileImage!);
-          imageUrl = await ref.getDownloadURL();
+
+        break; // success
+      } catch (e) {
+        attempt++;
+        if (attempt >= maxRetries) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Image upload failed: ${e.toString()}')),
+          );
         } else {
-          await ref.delete();
-          imageUrl = null;
+          await Future.delayed(Duration(seconds: 2 * attempt));
         }
-        setState(() => imageChanged = false);
+      } finally {
+        setState(() => isLoading = false);
       }
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Profile updated successfully')),
-      );
-    } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Failed to update profile: $e')));
     }
-    setState(() => isLoading = false);
   }
 
-  Future<void> pickImage(ImageSource source) async {
-    final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(source: source);
-    if (pickedFile != null) {
-      setState(() {
-        profileImage = File(pickedFile.path);
-        imageChanged = true;
-      });
+  Future<void> _updateField(String field) async {
+    if (userId == null) return;
+    final newValue = _controllers[field]?.text.trim() ?? '';
+    if (newValue.isEmpty) return;
+
+    setState(() => isLoading = true);
+    const maxRetries = 3;
+    int attempt = 0;
+
+    while (attempt < maxRetries) {
+      try {
+        await FirebaseFirestore.instance.collection('users').doc(userId).update(
+          {field: newValue, 'updatedAt': FieldValue.serverTimestamp()},
+        );
+
+        setState(() => userData[field] = newValue);
+        break; // success
+      } catch (e) {
+        attempt++;
+        if (attempt >= maxRetries) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Update failed: ${e.toString()}')),
+          );
+        } else {
+          await Future.delayed(Duration(seconds: 2 * attempt));
+        }
+      } finally {
+        setState(() => isLoading = false);
+      }
     }
-    Navigator.pop(context);
   }
 
-  void showImageSourceActionSheet() {
-    showModalBottomSheet(
+  Future<void> _confirmLogout() async {
+    final shouldLogout = await showDialog<bool>(
       context: context,
       builder:
-          (context) => SafeArea(
-            child: Wrap(
+          (context) => AlertDialog(
+            title: const Text('Logout'),
+            content: const Text('Are you sure you want to logout?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('No', style: TextStyle(color: Colors.white)),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(context, true),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF00D09E),
+                ),
+                child: const Text('Yes', style: TextStyle(color: Colors.white)),
+              ),
+            ],
+          ),
+    );
+
+    if (shouldLogout == true) {
+      await FirebaseAuth.instance.signOut();
+      if (mounted) {
+        Navigator.pushReplacementNamed(context, '/login');
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    for (var controller in _controllers.values) {
+      controller.dispose();
+    }
+    super.dispose();
+  }
+
+  Widget _buildEditableField(String label, String field) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                ListTile(
-                  leading: const Icon(Icons.photo_library),
-                  title: const Text('Choose from Gallery'),
-                  onTap: () => pickImage(ImageSource.gallery),
+                Text(
+                  label,
+                  style: const TextStyle(color: Colors.grey, fontSize: 14),
                 ),
-                ListTile(
-                  leading: const Icon(Icons.camera_alt),
-                  title: const Text('Take a Photo'),
-                  onTap: () => pickImage(ImageSource.camera),
-                ),
-                if (imageUrl != null || profileImage != null)
-                  ListTile(
-                    leading: const Icon(Icons.delete, color: Colors.red),
-                    title: const Text(
-                      'Remove Photo',
-                      style: TextStyle(color: Colors.red),
-                    ),
-                    onTap: () {
-                      setState(() {
-                        profileImage = null;
-                        imageUrl = null;
-                        imageChanged = true;
-                      });
-                      Navigator.pop(context);
-                    },
+                TextField(
+                  controller: _controllers[field],
+                  decoration: const InputDecoration(
+                    border: InputBorder.none,
+                    isDense: true,
+                    contentPadding: EdgeInsets.zero,
                   ),
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  onSubmitted: (_) => _updateField(field),
+                ),
+                const Divider(height: 20, thickness: 1),
               ],
             ),
           ),
-    );
-  }
-
-  Widget buildTextField({
-    required String label,
-    required TextEditingController controller,
-    bool obscure = false,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label, style: const TextStyle(fontWeight: FontWeight.bold)),
-        const SizedBox(height: 6),
-        TextField(
-          controller: controller,
-          obscureText: obscure,
-          decoration: const InputDecoration(
-            hintStyle: TextStyle(color: Colors.grey),
-            border: InputBorder.none,
-            filled: true,
-            fillColor: Color(0xFFDFF7E2),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.all(Radius.circular(8)),
-              borderSide: BorderSide.none,
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.all(Radius.circular(8)),
-              borderSide: BorderSide.none,
-            ),
+          IconButton(
+            icon: const Icon(Icons.edit, color: Color(0xFF00D09E), size: 20),
+            onPressed: () => _updateField(field),
           ),
-        ),
-        const SizedBox(height: 12),
-      ],
+        ],
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final screenHeight = MediaQuery.of(context).size.height;
+    final size = MediaQuery.of(context).size;
 
     return Scaffold(
       body: Container(
         color: const Color(0xFF00D09E),
-        width: screenWidth,
-        height: screenHeight,
+        width: size.width,
+        height: size.height,
         child: Column(
           children: [
             Padding(
-              padding: EdgeInsets.only(top: screenHeight * 0.09),
-              child: const Center(
-                child: Text(
-                  "Profile",
-                  style: TextStyle(
-                    fontSize: 25,
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                  ),
+              padding: EdgeInsets.only(top: size.height * 0.09),
+              child: const Text(
+                "Profile",
+                style: TextStyle(
+                  fontSize: 25,
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
                 ),
               ),
             ),
-            SizedBox(height: screenHeight * 0.04),
+            SizedBox(height: size.height * 0.04),
             Expanded(
               child: Container(
                 padding: EdgeInsets.symmetric(
-                  horizontal: screenWidth * 0.08,
-                  vertical: screenHeight * 0.03,
+                  horizontal: size.width * 0.08,
+                  vertical: size.height * 0.03,
                 ),
                 decoration: const BoxDecoration(
                   color: Colors.white,
@@ -260,8 +296,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 alignment: Alignment.center,
                                 children: [
                                   Container(
-                                    width: screenWidth * 0.4,
-                                    height: screenWidth * 0.4,
+                                    width: size.width * 0.4,
+                                    height: size.width * 0.4,
                                     decoration: BoxDecoration(
                                       borderRadius: BorderRadius.circular(16),
                                       border: Border.all(
@@ -276,42 +312,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                           profileImage != null
                                               ? Image.file(
                                                 profileImage!,
-                                                width: screenWidth * 0.4,
-                                                height: screenWidth * 0.4,
                                                 fit: BoxFit.cover,
                                               )
                                               : imageUrl != null
                                               ? Image.network(
                                                 imageUrl!,
-                                                width: screenWidth * 0.4,
-                                                height: screenWidth * 0.4,
                                                 fit: BoxFit.cover,
-                                                loadingBuilder: (
-                                                  BuildContext context,
-                                                  Widget child,
-                                                  ImageChunkEvent?
-                                                  loadingProgress,
-                                                ) {
-                                                  if (loadingProgress == null)
-                                                    return child;
-                                                  return Center(
-                                                    child: CircularProgressIndicator(
-                                                      value:
-                                                          loadingProgress
-                                                                      .expectedTotalBytes !=
-                                                                  null
-                                                              ? loadingProgress
-                                                                      .cumulativeBytesLoaded /
-                                                                  loadingProgress
-                                                                      .expectedTotalBytes!
-                                                              : null,
-                                                    ),
-                                                  );
-                                                },
                                               )
                                               : Icon(
                                                 Icons.person,
-                                                size: screenWidth * 0.3,
+                                                size: size.width * 0.3,
                                                 color: const Color(0xFF00D09E),
                                               ),
                                     ),
@@ -319,11 +329,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   Positioned(
                                     bottom: 8,
                                     right: 8,
-                                    child: GestureDetector(
-                                      onTap: showImageSourceActionSheet,
-                                      child: Container(
-                                        height: 40,
-                                        width: 40,
+                                    child: IconButton(
+                                      icon: Container(
+                                        padding: const EdgeInsets.all(6),
                                         decoration: BoxDecoration(
                                           shape: BoxShape.circle,
                                           color: Colors.white,
@@ -338,62 +346,40 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                           color: Color(0xFF00D09E),
                                         ),
                                       ),
+                                      onPressed:
+                                          () => _pickImage(ImageSource.gallery),
                                     ),
                                   ),
                                 ],
                               ),
                               const SizedBox(height: 24),
-                              buildTextField(
-                                label: "Full Name",
-                                controller: fullNameController,
-                              ),
-                              buildTextField(
-                                label: "Username",
-                                controller: userNameController,
-                              ),
-                              buildTextField(
-                                label: "Contact",
-                                controller: contactController,
-                              ),
-                              buildTextField(
-                                label: "Email",
-                                controller: emailController,
-                              ),
-                              buildTextField(
-                                label: "Password",
-                                controller: passwordController,
-                                obscure: true,
-                              ),
-                              SizedBox(height: screenHeight * 0.04),
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: ElevatedButton(
-                                      onPressed: handleChange,
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: const Color(
-                                          0xFF00D09E,
-                                        ),
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(
-                                            40,
-                                          ),
-                                        ),
-                                        padding: const EdgeInsets.symmetric(
-                                          vertical: 15,
-                                        ),
-                                      ),
-                                      child: const Text(
-                                        "Change",
-                                        style: TextStyle(
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 16,
-                                        ),
-                                      ),
+                              _buildEditableField("Full Name", 'fullName'),
+                              _buildEditableField("Username", 'userName'),
+                              _buildEditableField("Contact", 'contact'),
+                              _buildEditableField("Email", 'email'),
+                              SizedBox(height: size.height * 0.04),
+                              SizedBox(
+                                width: double.infinity,
+                                child: ElevatedButton(
+                                  onPressed: _confirmLogout,
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: const Color(0xFF00D09E),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(40),
+                                    ),
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 15,
                                     ),
                                   ),
-                                ],
+                                  child: const Text(
+                                    "Logout",
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 16,
+                                    ),
+                                  ),
+                                ),
                               ),
                             ],
                           ),

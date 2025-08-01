@@ -6,81 +6,91 @@ class RecommendScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    List<List<String>> displayImages = [
-      [
-        "assets/R1.png",
-        "\$15",
-        "Chocolate and Fresh Fruit Crepes",
-        "Fresh Chocolate Crepes",
-        "5.0",
-      ],
-      [
-        "assets/R2.png",
-        "\$12",
-        "Bean and Vegetable Burger",
-        "Vegetable burger Mixed with bean",
-        "4.8",
-      ],
-      [
-        "assets/R3.png",
-        "\$15",
-        "Creamy Milkshake",
-        "Milkshake flavours with Chocolate",
-        "4.9",
-      ],
-      [
-        "assets/R4.png",
-        "\$10",
-        "Chicken Rice",
-        "Rice with toppins of Chicken",
-        "5.0",
-      ],
-      [
-        "assets/R5.png",
-        "\$11",
-        "Beaf Rice",
-        "Rice with chicken and Beaf ",
-        "5.0",
-      ],
-      [
-        "assets/6.png",
-        "\$16",
-        "Mushroom Risotto",
-        "Creamy Mushroom Risotto, cooked to perfection",
-        "4.9",
-      ],
-      [
-        "assets/7.png",
-        "\$18",
-        "Macarons",
-        "Delicate Vanilla and Chocolate macarons",
-        "5.0",
-      ],
-      [
-        "assets/8.png",
-        "\$20",
-        "Chocolate Brownie",
-        "Premium cocoa, melted chocolate, and a hint of vanilla",
-        "4.0",
-      ],
-      [
-        "assets/9.png",
-        "\$20",
-        "Mojito",
-        "Made with white rum, fresh mint leaves, lime juice",
-        "4.7",
-      ],
-      [
-        "assets/10.png",
-        "\$20",
-        "Iced Coffee",
-        "Espresso, chilled milk, and a touch of sweetness",
-        "4.9",
-      ],
+    final List<Map<String, dynamic>> displayItems = [
+      {
+        'image': "assets/R1.png",
+        'price': "\$15",
+        'title': "Chocolate and Fresh Fruit Crepes",
+        'subtitle': "Fresh Chocolate Crepes",
+        'rating': "5.0",
+        'id': "crepes_001", // Added product ID
+      },
+      {
+        'image': "assets/R2.png",
+        'price': "\$12",
+        'title': "Bean and Vegetable Burger",
+        'subtitle': "Vegetable burger Mixed with bean",
+        'rating': "4.8",
+        'id': "burger_002", // Added product ID
+      },
+      {
+        'image': "assets/R3.png",
+        'price': "\$15",
+        'title': "Creamy Milkshake",
+        'subtitle': "Milkshake flavours with Chocolate",
+        'rating': "4.9",
+        'id': "milkshake_003", // Added product ID
+      },
+      {
+        'image': "assets/R4.png",
+        'price': "\$10",
+        'title': "Chicken Rice",
+        'subtitle': "Rice with toppins of Chicken",
+        'rating': "5.0",
+        'id': "chicken_rice_004", // Added product ID
+      },
+      {
+        'image': "assets/R5.png",
+        'price': "\$11",
+        'title': "Beaf Rice",
+        'subtitle': "Rice with chicken and Beaf",
+        'rating': "5.0",
+        'id': "beef_rice_005", // Added product ID
+      },
+      {
+        'image': "assets/6.png",
+        'price': "\$16",
+        'title': "Mushroom Risotto",
+        'subtitle': "Creamy Mushroom Risotto, cooked to perfection",
+        'rating': "4.9",
+        'id': "risotto_006", // Added product ID
+      },
+      {
+        'image': "assets/7.png",
+        'price': "\$18",
+        'title': "Macarons",
+        'subtitle': "Delicate Vanilla and Chocolate macarons",
+        'rating': "5.0",
+        'id': "macarons_007", // Added product ID
+      },
+      {
+        'image': "assets/8.png",
+        'price': "\$20",
+        'title': "Chocolate Brownie",
+        'subtitle': "Premium cocoa, melted chocolate, and a hint of vanilla",
+        'rating': "4.0",
+        'id': "brownie_008", // Added product ID
+      },
+      {
+        'image': "assets/9.png",
+        'price': "\$20",
+        'title': "Mojito",
+        'subtitle': "Made with white rum, fresh mint leaves, lime juice",
+        'rating': "4.7",
+        'id': "mojito_009", // Added product ID
+      },
+      {
+        'image': "assets/10.png",
+        'price': "\$20",
+        'title': "Iced Coffee",
+        'subtitle': "Espresso, chilled milk, and a touch of sweetness",
+        'rating': "4.9",
+        'id': "coffee_010", // Added product ID
+      },
     ];
 
-    double screenHeight = MediaQuery.of(context).size.height;
-    double screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+    final screenWidth = MediaQuery.of(context).size.width;
 
     return Scaffold(
       body: Stack(
@@ -122,9 +132,9 @@ class RecommendScreen extends StatelessWidget {
               child: Padding(
                 padding: const EdgeInsets.all(12),
                 child: ListView.builder(
-                  itemCount: displayImages.length,
+                  itemCount: displayItems.length,
                   itemBuilder: (context, index) {
-                    final item = displayImages[index];
+                    final item = displayItems[index];
                     return GestureDetector(
                       onTap: () {
                         Navigator.push(
@@ -132,11 +142,12 @@ class RecommendScreen extends StatelessWidget {
                           MaterialPageRoute(
                             builder:
                                 (_) => DetailScreen(
-                                  image: item[0],
-                                  price: item[1],
-                                  title: item[2],
-                                  subtitle: item[3],
-                                  rating: item[4],
+                                  image: item['image'],
+                                  price: item['price'],
+                                  title: item['title'],
+                                  subtitle: item['subtitle'],
+                                  rating: item['rating'],
+                                  productId: item['id'], // Added productId
                                 ),
                           ),
                         );
@@ -144,11 +155,11 @@ class RecommendScreen extends StatelessWidget {
                       child: Padding(
                         padding: const EdgeInsets.only(bottom: 16),
                         child: _buildContainer(
-                          item[0],
-                          item[1],
-                          item[2],
-                          item[3],
-                          item[4],
+                          item['image'],
+                          item['price'],
+                          item['title'],
+                          item['subtitle'],
+                          item['rating'],
                         ),
                       ),
                     );

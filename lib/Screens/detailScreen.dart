@@ -1,3 +1,4 @@
+import 'package:FoodyX/Screens/my_orders.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -27,92 +28,139 @@ class DetailScreen extends StatefulWidget {
 class _DetailScreenState extends State<DetailScreen> {
   int quantity = 1;
   bool isAddingToCart = false;
+  final primaryColor = const Color(0xFF00D09E);
 
   Future<void> addToCart() async {
-    // Debug current user
-    debugPrint(
-      'Attempting to add to cart. Current user: ${FirebaseAuth.instance.currentUser?.uid}',
-    );
+    if (isAddingToCart) return;
 
     final userId = FirebaseAuth.instance.currentUser?.uid;
     if (userId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please login to add items to cart')),
-      );
+      showLoginPrompt();
       return;
     }
 
     setState(() => isAddingToCart = true);
 
     try {
-      // Convert price safely by removing all non-numeric characters except decimal point
-      final numericPrice = widget.price.replaceAll(RegExp(r'[^\d.]'), '');
-      final price = double.tryParse(numericPrice) ?? 0.0;
+      final price = convertPriceToDouble(widget.price);
+      await updateOrCreateCartItem(userId, price);
 
-      debugPrint(
-        'Adding item to cart: ${widget.title}, Price: $price, Qty: $quantity',
-      );
-
-      final cartRef = FirebaseFirestore.instance
-          .collection('users')
-          .doc(userId)
-          .collection('cart');
-
-      // Check for existing item with same productId
-      final existingItem =
-          await cartRef
-              .where('productId', isEqualTo: widget.productId)
-              .limit(1)
-              .get();
-
-      if (existingItem.docs.isNotEmpty) {
-        debugPrint('Updating existing cart item');
-        await cartRef.doc(existingItem.docs.first.id).update({
-          'quantity': FieldValue.increment(quantity),
-          'updatedAt': FieldValue.serverTimestamp(),
-          'price': price, // Update price in case it changed
-        });
-      } else {
-        debugPrint('Creating new cart item');
-        await cartRef.add({
-          'productId': widget.productId,
-          'title': widget.title,
-          'price': price,
-          'imageUrl': widget.image,
-          'description': widget.subtitle,
-          'quantity': quantity,
-          'addedAt': FieldValue.serverTimestamp(),
-          'updatedAt': FieldValue.serverTimestamp(),
-        });
-      }
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Added $quantity ${widget.title} to cart'),
-          duration: const Duration(seconds: 2),
-        ),
-      );
-    } on FirebaseException catch (e) {
-      debugPrint('Firebase error: ${e.code} - ${e.message}');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Failed to add to cart: ${e.message ?? 'Unknown Firebase error'}',
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.check_circle, color: Colors.white, size: 24),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    '${quantity}x ${widget.title} added to cart',
+                    style: const TextStyle(fontSize: 16),
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: Colors.green,
+            duration: const Duration(seconds: 2),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
           ),
-          duration: const Duration(seconds: 2),
-        ),
-      );
+        );
+
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const MyOrdersScreen()),
+        );
+      }
     } catch (e) {
-      debugPrint('Unexpected error: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error: ${e.toString()}'),
-          duration: const Duration(seconds: 2),
-        ),
-      );
+      showErrorMessage(e);
     } finally {
-      setState(() => isAddingToCart = false);
+      if (mounted) setState(() => isAddingToCart = false);
     }
+  }
+
+  double convertPriceToDouble(String priceString) {
+    try {
+      final numericString = priceString.replaceAll(RegExp(r'[^0-9.]'), '');
+      final parts = numericString.split('.');
+      String normalizedString;
+      if (parts.length > 1) {
+        normalizedString = '${parts[0]}.${parts.sublist(1).join()}';
+      } else {
+        normalizedString = numericString;
+      }
+      final result = double.tryParse(normalizedString);
+      if (result == null) throw FormatException('Could not parse price');
+      return result;
+    } catch (e) {
+      return 0.0;
+    }
+  }
+
+  Future<void> updateOrCreateCartItem(String userId, double price) async {
+    final cartRef = FirebaseFirestore.instance
+        .collection('users')
+        .doc(userId)
+        .collection('cart');
+
+    final existingItem =
+        await cartRef
+            .where('productId', isEqualTo: widget.productId)
+            .limit(1)
+            .get();
+
+    if (existingItem.docs.isNotEmpty) {
+      await cartRef.doc(existingItem.docs.first.id).update({
+        'quantity': FieldValue.increment(quantity),
+        'updatedAt': FieldValue.serverTimestamp(),
+        'price': price,
+      });
+    } else {
+      await cartRef.add({
+        'productId': widget.productId,
+        'title': widget.title,
+        'price': price,
+        'imageUrl': widget.image,
+        'description': widget.subtitle,
+        'quantity': quantity,
+        'addedAt': FieldValue.serverTimestamp(),
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+    }
+  }
+
+  void showLoginPrompt() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: const Text('Please login to add items to cart'),
+        action: SnackBarAction(label: 'Login', onPressed: () {}),
+      ),
+    );
+  }
+
+  void showErrorMessage(dynamic error) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(Icons.error_outline, color: Colors.white, size: 24),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                error is FirebaseException
+                    ? error.message ?? 'Failed to add to cart'
+                    : 'An error occurred',
+                style: const TextStyle(fontSize: 16),
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: Colors.red,
+        duration: const Duration(seconds: 2),
+      ),
+    );
   }
 
   @override
@@ -122,41 +170,11 @@ class _DetailScreenState extends State<DetailScreen> {
         MediaQuery.of(context).orientation == Orientation.landscape;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF00D09E),
+      backgroundColor: primaryColor,
       body: SafeArea(
         child: Column(
           children: [
-            // Header with back button and title
-            Padding(
-              padding: EdgeInsets.only(top: screen.height * 0.02),
-              child: Stack(
-                children: [
-                  Center(
-                    child: Text(
-                      widget.title,
-                      style: const TextStyle(
-                        fontSize: 25,
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                  Positioned(
-                    left: 16,
-                    child: InkWell(
-                      onTap: () => Navigator.pop(context),
-                      child: const CircleAvatar(
-                        backgroundColor: Colors.white,
-                        child: Icon(Icons.arrow_back, color: Color(0xFF00D09E)),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 20),
-
-            // Main content area
+            _buildHeader(screen),
             Expanded(
               child: Container(
                 width: double.infinity,
@@ -167,20 +185,10 @@ class _DetailScreenState extends State<DetailScreen> {
                     topRight: Radius.circular(30),
                   ),
                 ),
-                child: LayoutBuilder(
-                  builder: (context, constraints) {
-                    return Padding(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: screen.width * 0.05,
-                        vertical: screen.height * 0.03,
-                      ),
-                      child:
-                          isLandscape
-                              ? _buildLandscapeLayout(constraints)
-                              : _buildPortraitLayout(screen),
-                    );
-                  },
-                ),
+                child:
+                    isLandscape
+                        ? _buildLandscapeLayout(screen)
+                        : _buildPortraitLayout(screen),
               ),
             ),
           ],
@@ -189,29 +197,58 @@ class _DetailScreenState extends State<DetailScreen> {
     );
   }
 
-  Widget _buildLandscapeLayout(BoxConstraints constraints) {
+  Widget _buildHeader(Size screen) {
+    return Padding(
+      padding: EdgeInsets.only(top: screen.height * 0.02, left: 16, right: 16),
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          Text(
+            widget.title,
+            style: const TextStyle(
+              fontSize: 25,
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: InkWell(
+              onTap: () => Navigator.pop(context),
+              child: const CircleAvatar(
+                backgroundColor: Colors.white,
+                child: Icon(Icons.arrow_back, color: Color(0xFF00D09E)),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLandscapeLayout(Size screen) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Product image in landscape
         Expanded(
-          flex: 1,
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(20),
-            child: Image.asset(
-              widget.image,
-              fit: BoxFit.cover,
-              height: constraints.maxHeight * 0.9,
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(20),
+              child: Image.asset(
+                widget.image,
+                fit: BoxFit.contain,
+                height: screen.height * 0.6,
+              ),
             ),
           ),
         ),
-        const SizedBox(width: 20),
-
-        // Product details in landscape
         Expanded(
-          flex: 1,
           child: SingleChildScrollView(
-            child: _buildProductDetails(isLandscape: true),
+            padding: const EdgeInsets.all(16),
+            child: _buildProductDetails(),
           ),
         ),
       ],
@@ -222,148 +259,117 @@ class _DetailScreenState extends State<DetailScreen> {
     return SingleChildScrollView(
       child: Column(
         children: [
-          // Product image in portrait
-          ClipRRect(
-            borderRadius: BorderRadius.circular(20),
-            child: Image.asset(
-              widget.image,
-              fit: BoxFit.cover,
-              height: screen.height * 0.3,
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(20),
+              child: Image.asset(
+                widget.image,
+                fit: BoxFit.cover,
+                width: double.infinity,
+                height: screen.height * 0.3,
+              ),
             ),
           ),
-          const SizedBox(height: 20),
-
-          // Product details in portrait
-          _buildProductDetails(),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: _buildProductDetails(),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildProductDetails({bool isLandscape = false}) {
-    return Padding(
-      padding: EdgeInsets.only(bottom: isLandscape ? 16 : 0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Price and quantity selector
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                widget.price,
-                style: const TextStyle(
-                  color: Color(0xFF00D09E),
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                ),
+  Widget _buildProductDetails() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              widget.price,
+              style: const TextStyle(
+                color: Color(0xFF00D09E),
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
               ),
-              Row(
-                children: [
-                  // Decrease quantity button
-                  GestureDetector(
-                    onTap: () {
-                      if (quantity > 1) {
-                        setState(() {
-                          quantity--;
-                        });
-                      }
-                    },
-                    child: CircleAvatar(
-                      radius: 16,
-                      backgroundColor:
-                          quantity > 1
-                              ? const Color(0xFF00D09E)
-                              : Colors.grey.shade400,
-                      child: const Icon(
-                        Icons.remove,
-                        color: Colors.white,
-                        size: 16,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-
-                  // Quantity display
-                  Text(
-                    quantity.toString(),
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-
-                  // Increase quantity button
-                  GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        quantity++;
-                      });
-                    },
-                    child: const CircleAvatar(
-                      radius: 16,
-                      backgroundColor: Color(0xFF00D09E),
-                      child: Icon(Icons.add, color: Colors.white, size: 16),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-
-          // Rating display
-          Row(
-            children: [
-              const Icon(Icons.star, color: Colors.orange, size: 20),
-              const SizedBox(width: 5),
-              Text(
-                widget.rating,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-
-          // Product title
-          Text(
-            widget.title,
-            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 10),
-
-          // Product description
-          Text(
-            widget.subtitle,
-            style: const TextStyle(fontSize: 16, color: Colors.grey),
-          ),
-          const SizedBox(height: 20),
-
-          // Add to cart button
-          SizedBox(
-            width: double.infinity,
-            height: 50,
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF00D09E),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                elevation: 3,
-              ),
-              onPressed: isAddingToCart ? null : addToCart,
-              child:
-                  isAddingToCart
-                      ? const CircularProgressIndicator(color: Colors.white)
-                      : const Text(
-                        'Add to Cart',
-                        style: TextStyle(fontSize: 18, color: Colors.white),
-                      ),
             ),
+            _buildQuantitySelector(),
+          ],
+        ),
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            const Icon(Icons.star, color: Colors.orange, size: 20),
+            const SizedBox(width: 5),
+            Text(
+              widget.rating,
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
+        const SizedBox(height: 20),
+        Text(
+          widget.title,
+          style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 10),
+        Text(
+          widget.subtitle,
+          style: const TextStyle(fontSize: 16, color: Colors.grey, height: 1.5),
+        ),
+        const SizedBox(height: 30),
+        SizedBox(
+          width: double.infinity,
+          height: 50,
+          child: ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: primaryColor,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              elevation: 3,
+            ),
+            onPressed: isAddingToCart ? null : addToCart,
+            child: const Text(
+              'Add to Cart',
+              style: TextStyle(fontSize: 18, color: Colors.white),
+            ),
+          ),
+        ),
+        const SizedBox(height: 20),
+      ],
+    );
+  }
+
+  Widget _buildQuantitySelector() {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.grey.shade100,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          IconButton(
+            icon: Icon(
+              Icons.remove,
+              color: quantity > 1 ? primaryColor : Colors.grey,
+            ),
+            onPressed: () {
+              if (quantity > 1) {
+                setState(() => quantity--);
+              }
+            },
+          ),
+          Text(
+            quantity.toString(),
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
+          IconButton(
+            icon: Icon(Icons.add, color: primaryColor),
+            onPressed: () => setState(() => quantity++),
           ),
         ],
       ),

@@ -39,6 +39,7 @@ class _NewPasswordScreenState extends State<NewPasswordScreen> {
         "A reset link has been sent.",
         color: const Color(0xFF00D09E),
       );
+      await Future.delayed(const Duration(seconds: 1));
 
       Navigator.pushReplacement(
         context,

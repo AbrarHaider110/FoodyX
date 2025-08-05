@@ -9,7 +9,6 @@ class BestSellerScreen extends StatefulWidget {
 }
 
 class _BestSellerScreenState extends State<BestSellerScreen> {
-  // Data structure for food items
   final List<FoodItem> foodItems = [
     FoodItem(
       image: "assets/f1.png",
@@ -261,45 +260,52 @@ class _BestSellerScreenState extends State<BestSellerScreen> {
             ),
             const SizedBox(height: 10),
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment:
+                  CrossAxisAlignment.end, // Align items at the bottom
               children: [
-                SizedBox(
-                  width: 100,
+                Expanded(
                   child: Text(
                     item.title,
                     style: const TextStyle(
-                      fontSize: 16,
+                      fontSize: 14,
                       fontWeight: FontWeight.bold,
                     ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 5,
-                    vertical: 3,
-                  ),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF00D09E),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(
-                        Icons.star,
-                        color: Color(0xFFFFD700),
-                        size: 10,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        item.rating,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 10,
+                Padding(
+                  padding: const EdgeInsets.only(
+                    bottom: 2,
+                  ), // Lower the star container slightly
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 5,
+                      vertical: 3,
+                    ),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF00D09E),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.star,
+                          color: Color(0xFFFFD700),
+                          size: 10,
                         ),
-                      ),
-                    ],
+                        const SizedBox(width: 4),
+                        Text(
+                          item.rating,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 10,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ],
@@ -312,23 +318,26 @@ class _BestSellerScreenState extends State<BestSellerScreen> {
                   child: Text(
                     isExpanded ? item.description : shortDescription,
                     style: const TextStyle(fontSize: 14, color: Colors.grey),
+                    maxLines: isExpanded ? null : 1,
+                    overflow: isExpanded ? null : TextOverflow.ellipsis,
                   ),
                 ),
-                GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      isExpandedList[index] = !isExpandedList[index];
-                    });
-                  },
-                  child: Text(
-                    isExpanded ? " See less" : " See more",
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: Color(0xFF00D09E),
-                      fontWeight: FontWeight.bold,
+                if (item.description.split(' ').length > 3)
+                  GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        isExpandedList[index] = !isExpandedList[index];
+                      });
+                    },
+                    child: Text(
+                      isExpanded ? " See less" : " See more",
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Color(0xFF00D09E),
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
-                ),
               ],
             ),
             const SizedBox(height: 6),
@@ -351,7 +360,6 @@ class _BestSellerScreenState extends State<BestSellerScreen> {
   }
 }
 
-// Data model for food items
 class FoodItem {
   final String image;
   final String icon;

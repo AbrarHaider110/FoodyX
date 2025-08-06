@@ -31,53 +31,31 @@ class _DetailScreenState extends State<DetailScreen> {
   final primaryColor = const Color(0xFF00D09E);
 
   Future<void> addToCart() async {
-    if (isAddingToCart) return;
-
     final userId = FirebaseAuth.instance.currentUser?.uid;
     if (userId == null) {
       showLoginPrompt();
       return;
     }
 
-    setState(() => isAddingToCart = true);
-
     try {
       final price = convertPriceToDouble(widget.price);
       await updateOrCreateCartItem(userId, price);
 
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('${quantity}x ${widget.title} added to cart'),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Row(
-              children: [
-                const Icon(Icons.check_circle, color: Colors.white, size: 24),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    '${quantity}x ${widget.title} added to cart',
-                    style: const TextStyle(fontSize: 16),
-                  ),
-                ),
-              ],
-            ),
-            backgroundColor: Colors.green,
+            content: Text('Failed to add item: ${e.toString()}'),
             duration: const Duration(seconds: 2),
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
-            ),
           ),
         );
-
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => const MyOrdersScreen()),
-        );
       }
-    } catch (e) {
-      showErrorMessage(e);
-    } finally {
-      if (mounted) setState(() => isAddingToCart = false);
     }
   }
 

@@ -63,9 +63,7 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
         return;
       }
 
-      // Start transaction
       await FirebaseFirestore.instance.runTransaction((transaction) async {
-        // Create new order
         final orderRef = ordersRef.doc();
         final items =
             cartSnapshot.docs.map((doc) {

@@ -1,3 +1,4 @@
+import 'package:FoodyX/Screens/payment_Screen.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -60,12 +61,15 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(const SnackBar(content: Text('Your cart is empty')));
+        setState(() => _isProcessingCheckout = false);
         return;
       }
 
+      late List<Map<String, dynamic>> items;
+
       await FirebaseFirestore.instance.runTransaction((transaction) async {
         final orderRef = ordersRef.doc();
-        final items =
+        items =
             cartSnapshot.docs.map((doc) {
               final data = doc.data()!;
               return {
@@ -74,9 +78,9 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
                 'price':
                     data['price'] is String
                         ? double.tryParse(
-                          data['price'].replaceAll(RegExp(r'[^\d.]'), '') ??
-                              0.0,
-                        )
+                              data['price'].replaceAll(RegExp(r'[^\d.]'), ''),
+                            ) ??
+                            0.0
                         : (data['price']?.toDouble() ?? 0.0),
                 'imageUrl': data['imageUrl'],
                 'description': data['description'] ?? data['subtitle'] ?? '',
@@ -93,7 +97,6 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
           'updatedAt': FieldValue.serverTimestamp(),
         });
 
-        // Clear cart
         for (final doc in cartSnapshot.docs) {
           transaction.delete(doc.reference);
         }
@@ -104,6 +107,11 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
           content: Text('Order placed successfully!'),
           duration: Duration(seconds: 2),
         ),
+      );
+
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => PaymentScreen()),
       );
     } on FirebaseException catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -443,7 +451,17 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
-              onPressed: _isProcessingCheckout ? null : checkout,
+              onPressed:
+                  _isProcessingCheckout
+                      ? null
+                      : () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => PaymentScreen(),
+                          ),
+                        );
+                      },
               child:
                   _isProcessingCheckout
                       ? const CircularProgressIndicator(color: Colors.white)

@@ -12,7 +12,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
   String _shippingAddress = "Fetching location...";
   bool _isLoading = true;
 
-  final Color _primaryColor = Color(0xFF00C896); // green from login screen
+  final Color _primaryColor = Color(0xFF00C896);
   final Color _textColor = Color(0xFF303030);
   final Color _secondaryTextColor = Color(0xFF7A7A7A);
 
@@ -194,7 +194,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
       width: double.infinity,
       padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Color(0xFFF2FFF9), // soft green background like login
+        color: Color(0xFFF2FFF9),
         borderRadius: BorderRadius.circular(12),
       ),
       child: child,

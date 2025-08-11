@@ -1,6 +1,7 @@
 import 'package:FoodyX/Provider/order_provider.dart';
+import 'package:FoodyX/Screens/Order_confirmed.dart';
+import 'package:FoodyX/Screens/Track_Order.dart';
 import 'package:FoodyX/Screens/loginScreen.dart';
-import 'package:FoodyX/Screens/payment_Screen.dart';
 import 'package:FoodyX/Screens/splashScreen.dart' show SplashScreen;
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -25,7 +26,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      home: SplashScreen(),
+      home: DeliveryTimeScreen(),
       routes: {'/login': (context) => const LoginScreen()},
     );
   }

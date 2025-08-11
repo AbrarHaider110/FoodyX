@@ -139,9 +139,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton(
-                          onPressed: () {
-                            // Confirm payment logic
-                          },
+                          onPressed: () {},
                           style: ElevatedButton.styleFrom(
                             backgroundColor: _primaryColor,
                             padding: EdgeInsets.symmetric(vertical: 16),

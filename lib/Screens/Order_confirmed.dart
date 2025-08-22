@@ -1,67 +1,126 @@
+import 'package:FoodyX/Screens/BottomBarnavigation.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
-class OrderConfirmedScreen extends StatelessWidget {
+class OrderConfirmedScreen extends StatefulWidget {
   const OrderConfirmedScreen({super.key});
 
   @override
+  State<OrderConfirmedScreen> createState() => _OrderConfirmedScreenState();
+}
+
+class _OrderConfirmedScreenState extends State<OrderConfirmedScreen>
+    with TickerProviderStateMixin {
+  late AnimationController _checkController;
+  late AnimationController _textController;
+  late String deliveryTime;
+
+  @override
+  void initState() {
+    super.initState();
+
+    DateTime nowUtc = DateTime.now().toUtc();
+    DateTime nowPakistan = nowUtc.add(const Duration(hours: 5));
+
+    DateTime deliveryDate = nowPakistan.add(const Duration(minutes: 30));
+    deliveryTime = DateFormat("EEE, d MMM, h:mm a").format(deliveryDate);
+
+    _checkController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 800),
+    )..forward();
+
+    _textController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1000),
+    );
+
+    Future.delayed(const Duration(milliseconds: 400), () {
+      if (mounted) _textController.forward();
+    });
+
+    Future.delayed(const Duration(seconds: 5), () {
+      if (mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const bottomBarScreen()),
+        );
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _checkController.dispose();
+    _textController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final primaryColor = const Color(0xFF00D09E);
+
     return Scaffold(
-      backgroundColor: const Color(0xFF00D09E),
+      backgroundColor: primaryColor,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 20.0),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Align(
-                alignment: Alignment.topLeft,
-                child: IconButton(
-                  icon: const Icon(Icons.arrow_back, color: Colors.white),
-                  onPressed: () => Navigator.pop(context),
-                ),
-              ),
               const Spacer(),
-              Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white, width: 4),
+              ScaleTransition(
+                scale: CurvedAnimation(
+                  parent: _checkController,
+                  curve: Curves.elasticOut,
                 ),
-                child: const Icon(Icons.circle, color: Colors.white, size: 20),
+                child: Container(
+                  padding: const EdgeInsets.all(40),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.white,
+                  ),
+                  child: Icon(
+                    Icons.check_rounded,
+                    color: primaryColor,
+                    size: 60,
+                  ),
+                ),
               ),
               const SizedBox(height: 30),
-              const Text(
-                '¡Order Confirmed!',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ),
-              const SizedBox(height: 10),
-              const Text(
-                'Your order has been placed successfully',
-                style: TextStyle(fontSize: 16, color: Colors.white70),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 20),
-              const Text(
-                'Delivery by Thu, 29th, 4:00 PM',
-                style: TextStyle(fontSize: 16, color: Colors.white),
-              ),
-              const SizedBox(height: 20),
-              GestureDetector(
-                onTap: () {},
-                child: const Text(
-                  'Track my order',
-                  style: TextStyle(fontSize: 16, color: Colors.orange),
+              FadeTransition(
+                opacity: _textController,
+                child: Column(
+                  children: [
+                    const Text(
+                      'Order Confirmed!',
+                      style: TextStyle(
+                        fontSize: 26,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    const Text(
+                      'Your order has been placed successfully',
+                      style: TextStyle(fontSize: 16, color: Colors.white70),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 20),
+                    Text(
+                      'Delivery by $deliveryTime (PKT)',
+                      style: const TextStyle(fontSize: 16, color: Colors.white),
+                    ),
+                  ],
                 ),
               ),
               const Spacer(),
-              const Text(
-                'If you have any questions, please reach out directly to our customer support',
-                style: TextStyle(fontSize: 14, color: Colors.white70),
-                textAlign: TextAlign.center,
+              FadeTransition(
+                opacity: _textController,
+                child: const Text(
+                  'If you have any questions, please reach out directly to our customer support',
+                  style: TextStyle(fontSize: 14, color: Colors.white70),
+                  textAlign: TextAlign.center,
+                ),
               ),
             ],
           ),

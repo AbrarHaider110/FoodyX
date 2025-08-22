@@ -35,7 +35,6 @@ class _DetailScreenState extends State<DetailScreen> {
       showLoginPrompt();
       return;
     }
-    if (isAddingToCart) return;
 
     setState(() => isAddingToCart = true);
 
@@ -45,29 +44,27 @@ class _DetailScreenState extends State<DetailScreen> {
 
       if (!mounted) return;
 
-      setState(() => isAddingToCart = false);
-
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('${widget.title} added to the cart'),
-          backgroundColor: primaryColor,
+          content: Text('${quantity}x ${widget.title} added to cart'),
           duration: const Duration(seconds: 2),
+          backgroundColor: primaryColor,
         ),
       );
 
-      Navigator.of(
-        context,
-      ).pop({'added': true, 'qty': quantity, 'title': widget.title});
-    } on FirebaseException catch (e) {
-      if (mounted) {
-        setState(() => isAddingToCart = false);
-        showErrorMessage(e);
-      }
+      Navigator.pop(context);
     } catch (e) {
       if (mounted) {
-        setState(() => isAddingToCart = false);
-        showErrorMessage(e);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to add item: ${e.toString()}'),
+            duration: const Duration(seconds: 2),
+            backgroundColor: Colors.red,
+          ),
+        );
       }
+    } finally {
+      if (mounted) setState(() => isAddingToCart = false);
     }
   }
 
@@ -82,8 +79,7 @@ class _DetailScreenState extends State<DetailScreen> {
         normalizedString = numericString;
       }
       final result = double.tryParse(normalizedString);
-      if (result == null) throw FormatException('Could not parse price');
-      return result;
+      return result ?? 0.0;
     } catch (e) {
       return 0.0;
     }
@@ -94,11 +90,13 @@ class _DetailScreenState extends State<DetailScreen> {
         .collection('users')
         .doc(userId)
         .collection('cart');
+
     final existingItem =
         await cartRef
             .where('productId', isEqualTo: widget.productId)
             .limit(1)
             .get();
+
     if (existingItem.docs.isNotEmpty) {
       await cartRef.doc(existingItem.docs.first.id).update({
         'quantity': FieldValue.increment(quantity),
@@ -123,30 +121,12 @@ class _DetailScreenState extends State<DetailScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: const Text('Please login to add items to cart'),
-        action: SnackBarAction(label: 'Login', onPressed: () {}),
-      ),
-    );
-  }
-
-  void showErrorMessage(dynamic error) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            const Icon(Icons.error_outline, color: Colors.white, size: 24),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                error is FirebaseException
-                    ? error.message ?? 'Failed to add to cart'
-                    : 'An error occurred',
-                style: const TextStyle(fontSize: 16),
-              ),
-            ),
-          ],
+        backgroundColor: primaryColor,
+        action: SnackBarAction(
+          label: 'Login',
+          onPressed: () {},
+          textColor: Colors.white,
         ),
-        backgroundColor: Colors.red,
-        duration: const Duration(seconds: 2),
       ),
     );
   }
@@ -156,6 +136,7 @@ class _DetailScreenState extends State<DetailScreen> {
     final screen = MediaQuery.of(context).size;
     final isLandscape =
         MediaQuery.of(context).orientation == Orientation.landscape;
+
     return Scaffold(
       backgroundColor: primaryColor,
       body: SafeArea(
@@ -322,11 +303,11 @@ class _DetailScreenState extends State<DetailScreen> {
             child:
                 isAddingToCart
                     ? const SizedBox(
-                      width: 22,
-                      height: 22,
+                      width: 24,
+                      height: 24,
                       child: CircularProgressIndicator(
-                        strokeWidth: 2,
                         color: Colors.white,
+                        strokeWidth: 2.5,
                       ),
                     )
                     : const Text(
@@ -355,9 +336,7 @@ class _DetailScreenState extends State<DetailScreen> {
               color: quantity > 1 ? primaryColor : Colors.grey,
             ),
             onPressed: () {
-              if (quantity > 1) {
-                setState(() => quantity--);
-              }
+              if (quantity > 1) setState(() => quantity--);
             },
           ),
           Text(

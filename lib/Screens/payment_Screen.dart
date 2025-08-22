@@ -1,7 +1,7 @@
+import 'package:FoodyX/Screens/Order_confirmed.dart';
 import 'package:flutter/material.dart';
-import 'package:geolocator/geolocator.dart';
-import 'package:geocoding/geocoding.dart';
-import 'package:permission_handler/permission_handler.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class PaymentScreen extends StatefulWidget {
   @override
@@ -9,57 +9,42 @@ class PaymentScreen extends StatefulWidget {
 }
 
 class _PaymentScreenState extends State<PaymentScreen> {
-  String _shippingAddress = "Fetching location...";
-  bool _isLoading = true;
+  final TextEditingController _addressController = TextEditingController();
+  final Color _primaryColor = const Color(0xFF00C896);
+  final Color _textColor = const Color(0xFF303030);
+  final Color _secondaryTextColor = const Color(0xFF7A7A7A);
 
-  final Color _primaryColor = Color(0xFF00C896);
-  final Color _textColor = Color(0xFF303030);
-  final Color _secondaryTextColor = Color(0xFF7A7A7A);
+  late Future<List<Map<String, dynamic>>> _cartFuture;
 
   @override
   void initState() {
     super.initState();
-    _fetchCurrentLocation();
+    _cartFuture = fetchCartItems();
   }
 
-  Future<void> _fetchCurrentLocation() async {
-    try {
-      final status = await Permission.location.request();
-      if (status.isGranted) {
-        Position position = await Geolocator.getCurrentPosition(
-          desiredAccuracy: LocationAccuracy.high,
-        );
+  @override
+  void dispose() {
+    _addressController.dispose();
+    super.dispose();
+  }
 
-        List<Placemark> placemarks = await placemarkFromCoordinates(
-          position.latitude,
-          position.longitude,
-        );
+  Future<List<Map<String, dynamic>>> fetchCartItems() async {
+    final userId = FirebaseAuth.instance.currentUser?.uid;
+    if (userId == null) return [];
+    final cartSnapshot =
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(userId)
+            .collection('cart')
+            .get();
+    return cartSnapshot.docs.map((doc) => doc.data()).toList();
+  }
 
-        if (placemarks.isNotEmpty) {
-          Placemark place = placemarks.first;
-          setState(() {
-            _shippingAddress =
-                "${place.street}, ${place.locality}, ${place.administrativeArea}, ${place.postalCode}";
-            _isLoading = false;
-          });
-        } else {
-          setState(() {
-            _shippingAddress = "Location found, but address unavailable.";
-            _isLoading = false;
-          });
-        }
-      } else {
-        setState(() {
-          _shippingAddress = "Location permission denied.";
-          _isLoading = false;
-        });
-      }
-    } catch (e) {
-      setState(() {
-        _shippingAddress = "Error fetching location: ${e.toString()}";
-        _isLoading = false;
-      });
-    }
+  String _formatQtyPrice(dynamic qty, dynamic price) {
+    final q = (qty is num) ? qty : num.tryParse('$qty') ?? 0;
+    final p = (price is num) ? price : num.tryParse('$price') ?? 0;
+    final priceStr = p % 1 == 0 ? p.toStringAsFixed(0) : p.toStringAsFixed(2);
+    return "${q} x $priceStr";
   }
 
   @override
@@ -69,8 +54,8 @@ class _PaymentScreenState extends State<PaymentScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            SizedBox(height: 16),
-            Text(
+            const SizedBox(height: 16),
+            const Text(
               'Payment',
               style: TextStyle(
                 fontSize: 24,
@@ -78,11 +63,11 @@ class _PaymentScreenState extends State<PaymentScreen> {
                 fontWeight: FontWeight.bold,
               ),
             ),
-            SizedBox(height: 24),
+            const SizedBox(height: 24),
             Expanded(
               child: Container(
-                padding: EdgeInsets.all(24),
-                decoration: BoxDecoration(
+                padding: const EdgeInsets.all(24),
+                decoration: const BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
                 ),
@@ -91,63 +76,107 @@ class _PaymentScreenState extends State<PaymentScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       _buildSectionTitle('Shipping Address'),
-                      SizedBox(height: 12),
+                      const SizedBox(height: 12),
                       _buildCard(
-                        child:
-                            _isLoading
-                                ? Center(
-                                  child: CircularProgressIndicator(
-                                    color: _primaryColor,
-                                  ),
-                                )
-                                : Text(
-                                  _shippingAddress,
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    color: _textColor,
-                                  ),
-                                ),
-                      ),
-                      SizedBox(height: 24),
-                      _buildSectionTitle('Order Summary'),
-                      SizedBox(height: 12),
-                      _buildCard(
-                        child: Column(
-                          children: [
-                            _buildDetailRow('Product A:', '2 items'),
-                            SizedBox(height: 8),
-                            _buildDetailRow('Product B:', '1 item'),
-                          ],
+                        child: TextField(
+                          controller: _addressController,
+                          decoration: const InputDecoration(
+                            hintText: "Enter your address",
+                            border: InputBorder.none,
+                          ),
                         ),
                       ),
-                      SizedBox(height: 24),
-                      _buildSectionTitle('Payment Method'),
-                      SizedBox(height: 12),
-                      _buildCard(
-                        child: _buildDetailRow('Code Card:', '48,780,000'),
+                      const SizedBox(height: 24),
+                      _buildSectionTitle('Order Summary'),
+                      const SizedBox(height: 12),
+                      FutureBuilder<List<Map<String, dynamic>>>(
+                        future: _cartFuture,
+                        builder: (context, snapshot) {
+                          if (snapshot.connectionState ==
+                              ConnectionState.waiting) {
+                            return Center(
+                              child: CircularProgressIndicator(
+                                color: _primaryColor,
+                              ),
+                            );
+                          }
+                          final items = snapshot.data ?? [];
+                          if (items.isEmpty) {
+                            return _buildCard(
+                              child: const Text("No items in cart"),
+                            );
+                          }
+                          return _buildCard(
+                            child: ListView.separated(
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
+                              itemCount: items.length,
+                              separatorBuilder:
+                                  (_, __) => const SizedBox(height: 8),
+                              itemBuilder: (context, index) {
+                                final item = items[index];
+                                final title =
+                                    (item['title'] ?? 'Unknown').toString();
+                                final qtyPrice = _formatQtyPrice(
+                                  item['quantity'],
+                                  item['price'],
+                                );
+                                return _buildDetailRow(title, qtyPrice);
+                              },
+                            ),
+                          );
+                        },
                       ),
-                      SizedBox(height: 24),
+                      const SizedBox(height: 24),
+                      _buildSectionTitle('Payment Method'),
+                      const SizedBox(height: 12),
+                      _buildCard(
+                        child: _buildDetailRow(
+                          'Card Payment:',
+                          'XXXX XXXX 1234',
+                        ),
+                      ),
+                      const SizedBox(height: 24),
                       _buildSectionTitle('Delivery Time'),
-                      SizedBox(height: 12),
+                      const SizedBox(height: 12),
                       _buildCard(
                         child: _buildDetailRow(
                           'Estimated Delivery:',
                           '25 mins',
                         ),
                       ),
-                      SizedBox(height: 32),
+                      const SizedBox(height: 32),
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton(
-                          onPressed: () {},
+                          onPressed: () {
+                            final address = _addressController.text.trim();
+                            if (address.isEmpty) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                    "Please enter your shipping address",
+                                  ),
+                                  backgroundColor: Colors.red,
+                                ),
+                              );
+                              return;
+                            }
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => OrderConfirmedScreen(),
+                              ),
+                            );
+                          },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: _primaryColor,
-                            padding: EdgeInsets.symmetric(vertical: 16),
+                            padding: const EdgeInsets.symmetric(vertical: 16),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(30),
                             ),
                           ),
-                          child: Text(
+                          child: const Text(
                             'CONFIRM PAYMENT',
                             style: TextStyle(
                               fontSize: 16,
@@ -158,7 +187,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
                           ),
                         ),
                       ),
-                      SizedBox(height: 16),
+                      const SizedBox(height: 16),
                       Center(
                         child: Text(
                           "Thank you for choosing us!",
@@ -190,9 +219,9 @@ class _PaymentScreenState extends State<PaymentScreen> {
   Widget _buildCard({required Widget child}) {
     return Container(
       width: double.infinity,
-      padding: EdgeInsets.all(16),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Color(0xFFF2FFF9),
+        color: const Color(0xFFF2FFF9),
         borderRadius: BorderRadius.circular(12),
       ),
       child: child,
@@ -201,15 +230,27 @@ class _PaymentScreenState extends State<PaymentScreen> {
 
   Widget _buildDetailRow(String label, String value) {
     return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(label, style: TextStyle(fontSize: 16, color: _secondaryTextColor)),
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-            color: _textColor,
+        Expanded(
+          child: Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(fontSize: 16, color: _secondaryTextColor),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Flexible(
+          child: Text(
+            value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.right,
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: _textColor,
+            ),
           ),
         ),
       ],

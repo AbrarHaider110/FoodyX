@@ -35,25 +35,38 @@ class _DetailScreenState extends State<DetailScreen> {
       showLoginPrompt();
       return;
     }
+    if (isAddingToCart) return;
+
+    setState(() => isAddingToCart = true);
 
     try {
       final price = convertPriceToDouble(widget.price);
       await updateOrCreateCartItem(userId, price);
 
+      if (!mounted) return;
+
+      setState(() => isAddingToCart = false);
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('${quantity}x ${widget.title} added to cart'),
+          content: Text('${widget.title} added to the cart'),
+          backgroundColor: primaryColor,
           duration: const Duration(seconds: 2),
         ),
       );
+
+      Navigator.of(
+        context,
+      ).pop({'added': true, 'qty': quantity, 'title': widget.title});
+    } on FirebaseException catch (e) {
+      if (mounted) {
+        setState(() => isAddingToCart = false);
+        showErrorMessage(e);
+      }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to add item: ${e.toString()}'),
-            duration: const Duration(seconds: 2),
-          ),
-        );
+        setState(() => isAddingToCart = false);
+        showErrorMessage(e);
       }
     }
   }
@@ -81,13 +94,11 @@ class _DetailScreenState extends State<DetailScreen> {
         .collection('users')
         .doc(userId)
         .collection('cart');
-
     final existingItem =
         await cartRef
             .where('productId', isEqualTo: widget.productId)
             .limit(1)
             .get();
-
     if (existingItem.docs.isNotEmpty) {
       await cartRef.doc(existingItem.docs.first.id).update({
         'quantity': FieldValue.increment(quantity),
@@ -145,7 +156,6 @@ class _DetailScreenState extends State<DetailScreen> {
     final screen = MediaQuery.of(context).size;
     final isLandscape =
         MediaQuery.of(context).orientation == Orientation.landscape;
-
     return Scaffold(
       backgroundColor: primaryColor,
       body: SafeArea(
@@ -309,10 +319,20 @@ class _DetailScreenState extends State<DetailScreen> {
               elevation: 3,
             ),
             onPressed: isAddingToCart ? null : addToCart,
-            child: const Text(
-              'Add to Cart',
-              style: TextStyle(fontSize: 18, color: Colors.white),
-            ),
+            child:
+                isAddingToCart
+                    ? const SizedBox(
+                      width: 22,
+                      height: 22,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                    : const Text(
+                      'Add to Cart',
+                      style: TextStyle(fontSize: 18, color: Colors.white),
+                    ),
           ),
         ),
         const SizedBox(height: 20),

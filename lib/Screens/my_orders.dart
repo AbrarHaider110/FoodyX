@@ -89,6 +89,7 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
         'createdAt': FieldValue.serverTimestamp(),
         'updatedAt': FieldValue.serverTimestamp(),
       });
+
       Navigator.push(
         context,
         MaterialPageRoute(builder: (context) => PaymentScreen()),

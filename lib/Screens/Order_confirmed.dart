@@ -1,6 +1,8 @@
 import 'package:FoodyX/Screens/BottomBarnavigation.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class OrderConfirmedScreen extends StatefulWidget {
   const OrderConfirmedScreen({super.key});
@@ -18,10 +20,9 @@ class _OrderConfirmedScreenState extends State<OrderConfirmedScreen>
   @override
   void initState() {
     super.initState();
-
+    _clearCart();
     DateTime nowUtc = DateTime.now().toUtc();
     DateTime nowPakistan = nowUtc.add(const Duration(hours: 5));
-
     DateTime deliveryDate = nowPakistan.add(const Duration(minutes: 30));
     deliveryTime = DateFormat("EEE, d MMM, h:mm a").format(deliveryDate);
 
@@ -47,6 +48,20 @@ class _OrderConfirmedScreenState extends State<OrderConfirmedScreen>
         );
       }
     });
+  }
+
+  Future<void> _clearCart() async {
+    final userId = FirebaseAuth.instance.currentUser?.uid;
+    if (userId != null) {
+      final cartRef = FirebaseFirestore.instance
+          .collection('users')
+          .doc(userId)
+          .collection('cart');
+      final snapshot = await cartRef.get();
+      for (var doc in snapshot.docs) {
+        await doc.reference.delete();
+      }
+    }
   }
 
   @override

@@ -62,48 +62,33 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
         return;
       }
 
-      late List<Map<String, dynamic>> items;
-      await FirebaseFirestore.instance.runTransaction((transaction) async {
-        final orderRef = ordersRef.doc();
-        items =
-            cartSnapshot.docs.map((doc) {
-              final data = doc.data();
-              return {
-                'productId': data['productId'],
-                'title': data['title'],
-                'price':
-                    data['price'] is String
-                        ? double.tryParse(
-                              data['price'].replaceAll(RegExp(r'[^\d.]'), ''),
-                            ) ??
-                            0.0
-                        : (data['price']?.toDouble() ?? 0.0),
-                'imageUrl': data['imageUrl'],
-                'description': data['description'] ?? data['subtitle'] ?? '',
-                'quantity': data['quantity'],
-              };
-            }).toList();
+      final items =
+          cartSnapshot.docs.map((doc) {
+            final data = doc.data();
+            return {
+              'productId': data['productId'],
+              'title': data['title'],
+              'price':
+                  data['price'] is String
+                      ? double.tryParse(
+                            data['price'].replaceAll(RegExp(r'[^\d.]'), ''),
+                          ) ??
+                          0.0
+                      : (data['price']?.toDouble() ?? 0.0),
+              'imageUrl': data['imageUrl'],
+              'description': data['description'] ?? data['subtitle'] ?? '',
+              'quantity': data['quantity'],
+            };
+          }).toList();
 
-        transaction.set(orderRef, {
-          'userId': userId,
-          'items': items,
-          'total': calculateTotal(cartSnapshot.docs),
-          'status': 'pending',
-          'createdAt': FieldValue.serverTimestamp(),
-          'updatedAt': FieldValue.serverTimestamp(),
-        });
-
-        for (final doc in cartSnapshot.docs) {
-          transaction.delete(doc.reference);
-        }
+      await ordersRef.add({
+        'userId': userId,
+        'items': items,
+        'total': calculateTotal(cartSnapshot.docs),
+        'status': 'pending',
+        'createdAt': FieldValue.serverTimestamp(),
+        'updatedAt': FieldValue.serverTimestamp(),
       });
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Order placed successfully!'),
-          duration: Duration(seconds: 2),
-        ),
-      );
       Navigator.push(
         context,
         MaterialPageRoute(builder: (context) => PaymentScreen()),
@@ -368,9 +353,6 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
                                                                   'updatedAt':
                                                                       FieldValue.serverTimestamp(),
                                                                 });
-                                                          } else {
-                                                            await item.reference
-                                                                .delete();
                                                           }
                                                         },
                                                       ),

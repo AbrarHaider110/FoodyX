@@ -13,31 +13,12 @@ class _PaymentScreenState extends State<PaymentScreen> {
   final Color _primaryColor = const Color(0xFF00C896);
   final Color _textColor = const Color(0xFF303030);
   final Color _secondaryTextColor = const Color(0xFF7A7A7A);
-
-  late Future<List<Map<String, dynamic>>> _cartFuture;
-
-  @override
-  void initState() {
-    super.initState();
-    _cartFuture = fetchCartItems();
-  }
+  bool _isProcessing = false;
 
   @override
   void dispose() {
     _addressController.dispose();
     super.dispose();
-  }
-
-  Future<List<Map<String, dynamic>>> fetchCartItems() async {
-    final userId = FirebaseAuth.instance.currentUser?.uid;
-    if (userId == null) return [];
-    final cartSnapshot =
-        await FirebaseFirestore.instance
-            .collection('users')
-            .doc(userId)
-            .collection('cart')
-            .get();
-    return cartSnapshot.docs.map((doc) => doc.data()).toList();
   }
 
   String _formatQtyPrice(dynamic qty, dynamic price) {
@@ -47,8 +28,59 @@ class _PaymentScreenState extends State<PaymentScreen> {
     return "${q} x $priceStr";
   }
 
+  Future<void> _confirmPayment(List<QueryDocumentSnapshot> cartDocs) async {
+    if (_isProcessing) return;
+    setState(() => _isProcessing = true);
+
+    final userId = FirebaseAuth.instance.currentUser?.uid;
+    if (userId == null) return;
+
+    final items =
+        cartDocs.map((doc) {
+          final data = doc.data() as Map<String, dynamic>;
+          return {
+            'productId': data['productId'],
+            'title': data['title'],
+            'price':
+                data['price'] is String
+                    ? double.tryParse(
+                          data['price'].replaceAll(RegExp(r'[^\d.]'), ''),
+                        ) ??
+                        0.0
+                    : (data['price']?.toDouble() ?? 0.0),
+            'imageUrl': data['imageUrl'],
+            'description': data['description'] ?? data['subtitle'] ?? '',
+            'quantity': data['quantity'],
+          };
+        }).toList();
+
+    double total = items.fold(
+      0,
+      (sum, item) => sum + ((item['price'] ?? 0) * (item['quantity'] ?? 1)),
+    );
+
+    await FirebaseFirestore.instance.collection('orders').add({
+      'userId': userId,
+      'items': items,
+      'total': total,
+      'address': _addressController.text.trim(),
+      'status': 'pending',
+      'createdAt': FieldValue.serverTimestamp(),
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (_) => OrderConfirmedScreen()),
+    );
+
+    setState(() => _isProcessing = false);
+  }
+
   @override
   Widget build(BuildContext context) {
+    final userId = FirebaseAuth.instance.currentUser?.uid;
+
     return Scaffold(
       backgroundColor: _primaryColor,
       body: SafeArea(
@@ -89,44 +121,54 @@ class _PaymentScreenState extends State<PaymentScreen> {
                       const SizedBox(height: 24),
                       _buildSectionTitle('Order Summary'),
                       const SizedBox(height: 12),
-                      FutureBuilder<List<Map<String, dynamic>>>(
-                        future: _cartFuture,
-                        builder: (context, snapshot) {
-                          if (snapshot.connectionState ==
-                              ConnectionState.waiting) {
-                            return Center(
-                              child: CircularProgressIndicator(
-                                color: _primaryColor,
-                              ),
-                            );
-                          }
-                          final items = snapshot.data ?? [];
-                          if (items.isEmpty) {
-                            return _buildCard(
-                              child: const Text("No items in cart"),
-                            );
-                          }
-                          return _buildCard(
-                            child: ListView.separated(
-                              shrinkWrap: true,
-                              physics: const NeverScrollableScrollPhysics(),
-                              itemCount: items.length,
-                              separatorBuilder:
-                                  (_, __) => const SizedBox(height: 8),
-                              itemBuilder: (context, index) {
-                                final item = items[index];
-                                final title =
-                                    (item['title'] ?? 'Unknown').toString();
-                                final qtyPrice = _formatQtyPrice(
-                                  item['quantity'],
-                                  item['price'],
+                      userId == null
+                          ? _buildCard(
+                            child: const Text("Please login to see cart"),
+                          )
+                          : StreamBuilder<QuerySnapshot>(
+                            stream:
+                                FirebaseFirestore.instance
+                                    .collection('users')
+                                    .doc(userId)
+                                    .collection('cart')
+                                    .snapshots(),
+                            builder: (context, snapshot) {
+                              if (snapshot.connectionState ==
+                                  ConnectionState.waiting) {
+                                return Center(
+                                  child: CircularProgressIndicator(
+                                    color: _primaryColor,
+                                  ),
                                 );
-                                return _buildDetailRow(title, qtyPrice);
-                              },
-                            ),
-                          );
-                        },
-                      ),
+                              }
+                              final cartDocs = snapshot.data?.docs ?? [];
+                              if (cartDocs.isEmpty) {
+                                return _buildCard(
+                                  child: const Text("No items in cart"),
+                                );
+                              }
+                              return _buildCard(
+                                child: ListView.separated(
+                                  shrinkWrap: true,
+                                  physics: const NeverScrollableScrollPhysics(),
+                                  itemCount: cartDocs.length,
+                                  separatorBuilder:
+                                      (_, __) => const SizedBox(height: 8),
+                                  itemBuilder: (context, index) {
+                                    final item =
+                                        cartDocs[index].data()
+                                            as Map<String, dynamic>;
+                                    final title = item['title'] ?? "No title";
+                                    final qtyPrice = _formatQtyPrice(
+                                      item['quantity'],
+                                      item['price'],
+                                    );
+                                    return _buildDetailRow(title, qtyPrice);
+                                  },
+                                ),
+                              );
+                            },
+                          ),
                       const SizedBox(height: 24),
                       _buildSectionTitle('Payment Method'),
                       const SizedBox(height: 12),
@@ -149,26 +191,44 @@ class _PaymentScreenState extends State<PaymentScreen> {
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton(
-                          onPressed: () {
-                            final address = _addressController.text.trim();
-                            if (address.isEmpty) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text(
-                                    "Please enter your shipping address",
-                                  ),
-                                  backgroundColor: Colors.red,
-                                ),
-                              );
-                              return;
-                            }
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => OrderConfirmedScreen(),
-                              ),
-                            );
-                          },
+                          onPressed:
+                              _isProcessing
+                                  ? null
+                                  : () async {
+                                    if (_addressController.text
+                                        .trim()
+                                        .isEmpty) {
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        const SnackBar(
+                                          content: Text(
+                                            "Please enter your shipping address",
+                                          ),
+                                          backgroundColor: Colors.red,
+                                        ),
+                                      );
+                                      return;
+                                    }
+                                    final cartSnapshot =
+                                        await FirebaseFirestore.instance
+                                            .collection('users')
+                                            .doc(userId)
+                                            .collection('cart')
+                                            .get();
+                                    if (cartSnapshot.docs.isEmpty) {
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        const SnackBar(
+                                          content: Text("Cart is empty"),
+                                          backgroundColor: Colors.red,
+                                        ),
+                                      );
+                                      return;
+                                    }
+                                    await _confirmPayment(cartSnapshot.docs);
+                                  },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: _primaryColor,
                             padding: const EdgeInsets.symmetric(vertical: 16),
@@ -176,15 +236,20 @@ class _PaymentScreenState extends State<PaymentScreen> {
                               borderRadius: BorderRadius.circular(30),
                             ),
                           ),
-                          child: const Text(
-                            'CONFIRM PAYMENT',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                              letterSpacing: 0.5,
-                            ),
-                          ),
+                          child:
+                              _isProcessing
+                                  ? const CircularProgressIndicator(
+                                    color: Colors.white,
+                                  )
+                                  : const Text(
+                                    'CONFIRM PAYMENT',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
+                                      letterSpacing: 0.5,
+                                    ),
+                                  ),
                         ),
                       ),
                       const SizedBox(height: 16),

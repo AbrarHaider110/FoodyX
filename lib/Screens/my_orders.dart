@@ -71,7 +71,7 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
         final orderRef = ordersRef.doc();
         items =
             cartSnapshot.docs.map((doc) {
-              final data = doc.data()!;
+              final data = doc.data();
               return {
                 'productId': data['productId'],
                 'title': data['title'],

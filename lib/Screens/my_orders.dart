@@ -2,6 +2,7 @@ import 'package:FoodyX/Screens/payment_Screen.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'dart:async';
 
 class MyOrdersScreen extends StatefulWidget {
   const MyOrdersScreen({super.key});
@@ -14,6 +15,82 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
   final primaryColor = const Color(0xFF00D09E);
   final redColor = Colors.red;
   bool _isProcessingCheckout = false;
+  int _selectedOrderType = 0;
+  final Map<String, Timer> _orderTimers = {};
+  bool _indexError = false;
+  String _indexUrl = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _setupOrderTimers();
+  }
+
+  @override
+  void dispose() {
+    _orderTimers.forEach((key, timer) => timer.cancel());
+    super.dispose();
+  }
+
+  void _setupOrderTimers() {
+    final userId = FirebaseAuth.instance.currentUser?.uid;
+    if (userId == null) return;
+
+    FirebaseFirestore.instance
+        .collection('orders')
+        .where('userId', isEqualTo: userId)
+        .where('status', isEqualTo: 'pending')
+        .snapshots()
+        .listen((snapshot) {
+          for (var doc in snapshot.docs) {
+            if (!_orderTimers.containsKey(doc.id)) {
+              _startOrderTimer(doc.id, doc);
+            }
+          }
+        });
+  }
+
+  void _startOrderTimer(String orderId, DocumentSnapshot order) {
+    final data = order.data() as Map<String, dynamic>;
+    final createdAt = data['createdAt'] as Timestamp;
+    final createdTime = createdAt.toDate();
+    final now = DateTime.now();
+    final elapsed = now.difference(createdTime).inMinutes;
+    final timeRemaining = 25 - elapsed;
+
+    if (timeRemaining <= 0) {
+      _completeOrder(orderId);
+      return;
+    }
+
+    final timer = Timer(Duration(minutes: timeRemaining), () {
+      _completeOrder(orderId);
+    });
+
+    _orderTimers[orderId] = timer;
+  }
+
+  Future<void> _completeOrder(String orderId) async {
+    try {
+      await FirebaseFirestore.instance.collection('orders').doc(orderId).update(
+        {'status': 'completed', 'updatedAt': FieldValue.serverTimestamp()},
+      );
+      _orderTimers.remove(orderId)?.cancel();
+    } catch (e) {
+      debugPrint('Error completing order: $e');
+    }
+  }
+
+  Future<void> _cancelOrder(String orderId) async {
+    try {
+      await FirebaseFirestore.instance.collection('orders').doc(orderId).update(
+        {'status': 'cancelled', 'updatedAt': FieldValue.serverTimestamp()},
+      );
+      _orderTimers.remove(orderId)?.cancel();
+    } catch (e) {
+      debugPrint('Error cancelling order: $e');
+    }
+  }
 
   double calculateTotal(List<DocumentSnapshot> items) {
     try {
@@ -35,84 +112,6 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
     }
   }
 
-  Future<void> checkout() async {
-    if (_isProcessingCheckout) return;
-    setState(() => _isProcessingCheckout = true);
-    final userId = FirebaseAuth.instance.currentUser?.uid;
-    if (userId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please login to complete checkout')),
-      );
-      setState(() => _isProcessingCheckout = false);
-      return;
-    }
-
-    try {
-      final cartRef = FirebaseFirestore.instance
-          .collection('users')
-          .doc(userId)
-          .collection('cart');
-      final ordersRef = FirebaseFirestore.instance.collection('orders');
-      final cartSnapshot = await cartRef.get();
-      if (cartSnapshot.docs.isEmpty) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Your cart is empty')));
-        setState(() => _isProcessingCheckout = false);
-        return;
-      }
-
-      final items =
-          cartSnapshot.docs.map((doc) {
-            final data = doc.data();
-            return {
-              'productId': data['productId'],
-              'title': data['title'],
-              'price':
-                  data['price'] is String
-                      ? double.tryParse(
-                            data['price'].replaceAll(RegExp(r'[^\d.]'), ''),
-                          ) ??
-                          0.0
-                      : (data['price']?.toDouble() ?? 0.0),
-              'imageUrl': data['imageUrl'],
-              'description': data['description'] ?? data['subtitle'] ?? '',
-              'quantity': data['quantity'],
-            };
-          }).toList();
-
-      await ordersRef.add({
-        'userId': userId,
-        'items': items,
-        'total': calculateTotal(cartSnapshot.docs),
-        'status': 'pending',
-        'createdAt': FieldValue.serverTimestamp(),
-        'updatedAt': FieldValue.serverTimestamp(),
-      });
-
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => PaymentScreen()),
-      );
-    } on FirebaseException catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Checkout failed: ${e.message}'),
-          duration: const Duration(seconds: 2),
-        ),
-      );
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error: ${e.toString()}'),
-          duration: const Duration(seconds: 2),
-        ),
-      );
-    } finally {
-      setState(() => _isProcessingCheckout = false);
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final screenHeight = MediaQuery.of(context).size.height;
@@ -129,7 +128,7 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
             ),
             child: const Center(
               child: Text(
-                "My Cart",
+                "My Orders",
                 style: TextStyle(
                   fontSize: 25,
                   color: Colors.white,
@@ -150,323 +149,830 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
               ),
               child:
                   userId == null
-                      ? Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Icon(
-                              Icons.login,
-                              size: 50,
-                              color: Colors.grey,
-                            ),
-                            const SizedBox(height: 20),
-                            const Text(
-                              'Please sign in to view your cart',
-                              style: TextStyle(
-                                fontSize: 18,
-                                color: Colors.grey,
-                              ),
-                            ),
-                            const SizedBox(height: 20),
-                            ElevatedButton(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: primaryColor,
-                              ),
-                              onPressed: () {},
-                              child: const Text(
-                                'Sign In',
-                                style: TextStyle(color: Colors.white),
-                              ),
-                            ),
-                          ],
-                        ),
-                      )
-                      : StreamBuilder<QuerySnapshot>(
-                        stream:
-                            FirebaseFirestore.instance
-                                .collection('users')
-                                .doc(userId)
-                                .collection('cart')
-                                .orderBy('addedAt', descending: true)
-                                .snapshots(),
-                        builder: (context, snapshot) {
-                          if (snapshot.hasError) {
-                            return Center(
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  const Icon(
-                                    Icons.error_outline,
-                                    size: 50,
-                                    color: Colors.red,
-                                  ),
-                                  const SizedBox(height: 20),
-                                  const Text(
-                                    'Failed to load cart',
-                                    style: TextStyle(
-                                      fontSize: 18,
-                                      color: Colors.grey,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 10),
-                                  Text(
-                                    snapshot.error.toString(),
-                                    style: const TextStyle(color: Colors.red),
-                                    textAlign: TextAlign.center,
-                                  ),
-                                ],
-                              ),
-                            );
-                          }
-
-                          if (snapshot.connectionState ==
-                              ConnectionState.waiting) {
-                            return const Center(
-                              child: CircularProgressIndicator(
-                                valueColor: AlwaysStoppedAnimation<Color>(
-                                  Color(0xFF00D09E),
-                                ),
-                              ),
-                            );
-                          }
-
-                          final cartItems = snapshot.data?.docs ?? [];
-                          if (cartItems.isEmpty) {
-                            return Center(
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    Icons.shopping_cart_outlined,
-                                    size: 80,
-                                    color: Colors.teal.shade200,
-                                  ),
-                                  const SizedBox(height: 16),
-                                  const Text(
-                                    "Your cart is empty",
-                                    textAlign: TextAlign.center,
-                                    style: TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.w500,
-                                      color: Colors.grey,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 20),
-                                  ElevatedButton(
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: primaryColor,
-                                    ),
-                                    onPressed: () => Navigator.pop(context),
-                                    child: const Text(
-                                      'Continue Shopping',
-                                      style: TextStyle(color: Colors.white),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            );
-                          }
-
-                          return Column(
-                            children: [
-                              Expanded(
-                                child: ListView.builder(
-                                  padding: const EdgeInsets.all(16),
-                                  itemCount: cartItems.length,
-                                  itemBuilder: (context, index) {
-                                    final item = cartItems[index];
-                                    final data =
-                                        item.data() as Map<String, dynamic>;
-                                    final price =
-                                        data['price'] is String
-                                            ? double.tryParse(
-                                                  data['price'].replaceAll(
-                                                    RegExp(r'[^\d.]'),
-                                                    '',
-                                                  ),
-                                                ) ??
-                                                0.0
-                                            : (data['price']?.toDouble() ??
-                                                0.0);
-                                    final quantity =
-                                        (data['quantity'] as num?)?.toInt() ??
-                                        1;
-                                    final totalPrice = price * quantity;
-
-                                    return Card(
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                      elevation: 4,
-                                      margin: const EdgeInsets.only(bottom: 16),
-                                      child: Padding(
-                                        padding: const EdgeInsets.all(12),
-                                        child: Row(
-                                          children: [
-                                            ClipRRect(
-                                              borderRadius:
-                                                  BorderRadius.circular(10),
-                                              child: Image.asset(
-                                                data['imageUrl'] ??
-                                                    'assets/placeholder.png',
-                                                width: 80,
-                                                height: 80,
-                                                fit: BoxFit.cover,
-                                              ),
-                                            ),
-                                            const SizedBox(width: 12),
-                                            Expanded(
-                                              child: Column(
-                                                crossAxisAlignment:
-                                                    CrossAxisAlignment.start,
-                                                children: [
-                                                  Text(
-                                                    data['title'] ?? 'No Title',
-                                                    style: const TextStyle(
-                                                      fontWeight:
-                                                          FontWeight.bold,
-                                                      fontSize: 16,
-                                                    ),
-                                                  ),
-                                                  const SizedBox(height: 4),
-                                                  Text(
-                                                    'Price: \$${price.toStringAsFixed(2)}',
-                                                    style: const TextStyle(
-                                                      color: Colors.grey,
-                                                    ),
-                                                  ),
-                                                  const SizedBox(height: 4),
-                                                  Row(
-                                                    children: [
-                                                      const Text('Qty: '),
-                                                      IconButton(
-                                                        icon: const Icon(
-                                                          Icons.remove,
-                                                          size: 18,
-                                                        ),
-                                                        onPressed: () async {
-                                                          if (quantity > 1) {
-                                                            await item.reference
-                                                                .update({
-                                                                  'quantity':
-                                                                      quantity -
-                                                                      1,
-                                                                  'updatedAt':
-                                                                      FieldValue.serverTimestamp(),
-                                                                });
-                                                          }
-                                                        },
-                                                      ),
-                                                      Text(quantity.toString()),
-                                                      IconButton(
-                                                        icon: const Icon(
-                                                          Icons.add,
-                                                          size: 18,
-                                                        ),
-                                                        onPressed: () async {
-                                                          await item.reference
-                                                              .update({
-                                                                'quantity':
-                                                                    quantity +
-                                                                    1,
-                                                                'updatedAt':
-                                                                    FieldValue.serverTimestamp(),
-                                                              });
-                                                        },
-                                                      ),
-                                                    ],
-                                                  ),
-                                                  Text(
-                                                    'Total: \$${totalPrice.toStringAsFixed(2)}',
-                                                    style: const TextStyle(
-                                                      fontWeight:
-                                                          FontWeight.bold,
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
-                                            IconButton(
-                                              icon: Icon(
-                                                Icons.delete,
-                                                color: redColor,
-                                              ),
-                                              onPressed:
-                                                  () async =>
-                                                      await item.reference
-                                                          .delete(),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    );
-                                  },
-                                ),
-                              ),
-                              Container(
-                                padding: const EdgeInsets.all(16),
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.grey.withOpacity(0.2),
-                                      spreadRadius: 2,
-                                      blurRadius: 5,
-                                      offset: const Offset(0, -2),
-                                    ),
-                                  ],
-                                ),
-                                child: Column(
-                                  children: [
-                                    Text(
-                                      'Total: \$${calculateTotal(cartItems).toStringAsFixed(2)}',
-                                      style: const TextStyle(
-                                        fontSize: 20,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 16),
-                                    SizedBox(
-                                      width: double.infinity,
-                                      height: 50,
-                                      child: ElevatedButton(
-                                        style: ElevatedButton.styleFrom(
-                                          backgroundColor: primaryColor,
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(
-                                              12,
-                                            ),
-                                          ),
-                                        ),
-                                        onPressed:
-                                            _isProcessingCheckout
-                                                ? null
-                                                : () async => await checkout(),
-                                        child:
-                                            _isProcessingCheckout
-                                                ? const CircularProgressIndicator(
-                                                  color: Colors.white,
-                                                )
-                                                : const Text(
-                                                  'Checkout',
-                                                  style: TextStyle(
-                                                    fontSize: 18,
-                                                    color: Colors.white,
-                                                  ),
-                                                ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          );
-                        },
+                      ? _buildLoginPrompt()
+                      : Column(
+                        children: [
+                          _buildOrderTypeSelector(),
+                          Expanded(child: _buildOrderContent(userId)),
+                        ],
                       ),
             ),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildLoginPrompt() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(Icons.login, size: 50, color: Colors.grey),
+          const SizedBox(height: 20),
+          const Text(
+            'Please sign in to view your orders',
+            style: TextStyle(fontSize: 18, color: Colors.grey),
+          ),
+          const SizedBox(height: 20),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: primaryColor),
+            onPressed: () {},
+            child: const Text('Sign In', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildOrderTypeSelector() {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            _buildOrderTypeButton("Cart", 0),
+            _buildOrderTypeButton("Active", 1),
+            _buildOrderTypeButton("Completed", 2),
+            _buildOrderTypeButton("Cancelled", 3),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildOrderTypeButton(String text, int index) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      child: ElevatedButton(
+        style: ElevatedButton.styleFrom(
+          backgroundColor:
+              _selectedOrderType == index ? primaryColor : Colors.grey[200],
+          foregroundColor:
+              _selectedOrderType == index ? Colors.white : Colors.black,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+        ),
+        onPressed: () {
+          setState(() {
+            _selectedOrderType = index;
+            _indexError = false;
+          });
+        },
+        child: Text(text),
+      ),
+    );
+  }
+
+  Widget _buildOrderContent(String userId) {
+    if (_indexError) {
+      return _buildIndexError();
+    }
+
+    switch (_selectedOrderType) {
+      case 0:
+        return _buildCartItems(userId);
+      case 1:
+        return _buildActiveOrders(userId);
+      case 2:
+        return _buildCompletedOrders(userId);
+      case 3:
+        return _buildCancelledOrders(userId);
+      default:
+        return _buildCartItems(userId);
+    }
+  }
+
+  Widget _buildIndexError() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(20.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.error_outline, size: 64, color: Colors.orange),
+            const SizedBox(height: 20),
+            const Text(
+              'Index Required',
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'To view your orders, you need to create a Firestore index.',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 16, color: Colors.black54),
+            ),
+            if (_indexUrl.isNotEmpty) ...[
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: () {
+                  // You might want to use url_launcher package to open the URL
+                  // For now, just show the URL
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Index URL: $_indexUrl')),
+                  );
+                },
+                child: const Text('Create Index'),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCartItems(String userId) {
+    return StreamBuilder<QuerySnapshot>(
+      stream:
+          FirebaseFirestore.instance
+              .collection('users')
+              .doc(userId)
+              .collection('cart')
+              .snapshots(),
+      builder: (context, snapshot) {
+        if (snapshot.hasError) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.error_outline, size: 50, color: Colors.red),
+                const SizedBox(height: 20),
+                const Text(
+                  'Failed to load cart items',
+                  style: TextStyle(fontSize: 18, color: Colors.grey),
+                ),
+              ],
+            ),
+          );
+        }
+
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(
+            child: CircularProgressIndicator(
+              valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF00D09E)),
+            ),
+          );
+        }
+
+        final cartItems = snapshot.data?.docs ?? [];
+
+        if (cartItems.isEmpty) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.shopping_cart_outlined,
+                  size: 80,
+                  color: Colors.teal.shade200,
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  "Your cart is empty",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.grey,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: primaryColor,
+                  ),
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text(
+                    'Continue Shopping',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+
+        final total = calculateTotal(cartItems);
+
+        return Column(
+          children: [
+            Expanded(
+              child: ListView.builder(
+                padding: const EdgeInsets.all(16),
+                itemCount: cartItems.length,
+                itemBuilder: (context, index) {
+                  final item = cartItems[index];
+                  final data = item.data() as Map<String, dynamic>;
+                  final price =
+                      data['price'] is String
+                          ? double.tryParse(
+                                data['price'].replaceAll(
+                                      RegExp(r'[^\d.]'),
+                                      '',
+                                    ) ??
+                                    '0.0',
+                              ) ??
+                              0.0
+                          : (data['price']?.toDouble() ?? 0.0);
+                  final quantity = (data['quantity'] as num?)?.toInt() ?? 1;
+                  final itemTotal = price * quantity;
+                  final imageUrl = data['imageUrl'] as String?;
+
+                  return Card(
+                    margin: const EdgeInsets.only(bottom: 16),
+                    child: ListTile(
+                      leading:
+                          imageUrl != null && imageUrl.isNotEmpty
+                              ? Container(
+                                width: 50,
+                                height: 50,
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(8),
+                                  image: DecorationImage(
+                                    image: NetworkImage(imageUrl),
+                                    fit: BoxFit.cover,
+                                  ),
+                                ),
+                              )
+                              : Container(
+                                width: 50,
+                                height: 50,
+                                color: Colors.grey[200],
+                                child: const Icon(Icons.fastfood),
+                              ),
+                      title: Text(data['title'] ?? 'Unknown Item'),
+                      subtitle: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Quantity: $quantity'),
+                          Text('Price: \$${price.toStringAsFixed(2)}'),
+                        ],
+                      ),
+                      trailing: Text(
+                        '\$${itemTotal.toStringAsFixed(2)}',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.grey[50],
+                border: Border(top: BorderSide(color: Colors.grey[300]!)),
+              ),
+              child: Column(
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'Total:',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      Text(
+                        '\$${total.toStringAsFixed(2)}',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: primaryColor,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: primaryColor,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                      ),
+                      onPressed:
+                          _isProcessingCheckout
+                              ? null
+                              : () => _navigateToPaymentScreen(
+                                userId,
+                                cartItems,
+                                total,
+                              ),
+                      child:
+                          _isProcessingCheckout
+                              ? const CircularProgressIndicator(
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  Colors.white,
+                                ),
+                              )
+                              : const Text(
+                                'Proceed to Payment',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _navigateToPaymentScreen(
+    String userId,
+    List<DocumentSnapshot> cartItems,
+    double total,
+  ) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => PaymentScreen()),
+    );
+  }
+
+  Widget _buildActiveOrders(String userId) {
+    return StreamBuilder<QuerySnapshot>(
+      stream:
+          FirebaseFirestore.instance
+              .collection('orders')
+              .where('userId', isEqualTo: userId)
+              .where('status', whereIn: ['pending', 'preparing'])
+              .snapshots(),
+      builder: (context, snapshot) {
+        if (snapshot.hasError) {
+          // Check if this is an index error
+          final error = snapshot.error.toString();
+          if (error.contains('index') || error.contains('indexes')) {
+            // Extract the URL from the error message if available
+            final regex = RegExp(
+              r'https://console\.firebase\.google\.com[^\s]+',
+            );
+            final match = regex.firstMatch(error);
+            if (match != null) {
+              _indexUrl = match.group(0)!;
+            }
+
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              setState(() {
+                _indexError = true;
+              });
+            });
+
+            return const SizedBox.shrink();
+          }
+
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.error_outline, size: 50, color: Colors.red),
+                const SizedBox(height: 20),
+                const Text(
+                  'Failed to load orders',
+                  style: TextStyle(fontSize: 18, color: Colors.grey),
+                ),
+              ],
+            ),
+          );
+        }
+
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(
+            child: CircularProgressIndicator(
+              valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF00D09E)),
+            ),
+          );
+        }
+
+        final orders = snapshot.data?.docs ?? [];
+
+        if (orders.isEmpty) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.shopping_bag_outlined,
+                  size: 80,
+                  color: Colors.teal.shade200,
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  "No active orders",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.grey,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: primaryColor,
+                  ),
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text(
+                    'Continue Shopping',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+
+        orders.sort((a, b) {
+          final aData = a.data() as Map<String, dynamic>;
+          final bData = b.data() as Map<String, dynamic>;
+          final aCreated = aData['createdAt'] as Timestamp;
+          final bCreated = bData['createdAt'] as Timestamp;
+          return bCreated.compareTo(aCreated);
+        });
+
+        return ListView.builder(
+          padding: const EdgeInsets.all(16),
+          itemCount: orders.length,
+          itemBuilder: (context, index) {
+            final order = orders[index];
+            final data = order.data() as Map<String, dynamic>;
+            final items = data['items'] as List<dynamic>;
+            final total = data['total']?.toDouble() ?? 0.0;
+            final createdAt = data['createdAt'] as Timestamp;
+            final createdTime = createdAt.toDate();
+            final now = DateTime.now();
+            final elapsed = now.difference(createdTime).inMinutes;
+            final timeRemaining = 25 - elapsed;
+            final status = data['status'] as String?;
+
+            return Card(
+              margin: const EdgeInsets.only(bottom: 16),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      "Order #${order.id.substring(0, 8)}",
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      "Date: ${createdTime.toString().substring(0, 10)}",
+                      style: TextStyle(color: Colors.grey[600]),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      "Total: \$${total.toStringAsFixed(2)}",
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      "Items: ${items.length}",
+                      style: TextStyle(color: Colors.grey[600]),
+                    ),
+                    const SizedBox(height: 8),
+                    if (status == 'pending' && timeRemaining > 0)
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            "Time remaining: $timeRemaining minutes",
+                            style: const TextStyle(
+                              color: Colors.orange,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          LinearProgressIndicator(
+                            value: elapsed / 25,
+                            backgroundColor: Colors.grey[200],
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              primaryColor,
+                            ),
+                          ),
+                        ],
+                      ),
+                    const SizedBox(height: 8),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          "Status: ${status ?? 'unknown'}",
+                          style: TextStyle(
+                            color:
+                                status == 'pending'
+                                    ? Colors.orange
+                                    : (status == 'preparing'
+                                        ? Colors.blue
+                                        : Colors.grey),
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        if (status == 'pending' && timeRemaining > 0)
+                          ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.red,
+                            ),
+                            onPressed: () => _cancelOrder(order.id),
+                            child: const Text(
+                              'Cancel Order',
+                              style: TextStyle(color: Colors.white),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildCompletedOrders(String userId) {
+    return StreamBuilder<QuerySnapshot>(
+      stream:
+          FirebaseFirestore.instance
+              .collection('orders')
+              .where('userId', isEqualTo: userId)
+              .where('status', isEqualTo: 'completed')
+              .snapshots(),
+      builder: (context, snapshot) {
+        if (snapshot.hasError) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.error_outline, size: 50, color: Colors.red),
+                const SizedBox(height: 20),
+                const Text(
+                  'Failed to load orders',
+                  style: TextStyle(fontSize: 18, color: Colors.grey),
+                ),
+              ],
+            ),
+          );
+        }
+
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(
+            child: CircularProgressIndicator(
+              valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF00D09E)),
+            ),
+          );
+        }
+
+        final orders = snapshot.data?.docs ?? [];
+
+        if (orders.isEmpty) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.check_circle_outline,
+                  size: 80,
+                  color: Colors.teal.shade200,
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  "No completed orders yet",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.grey,
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+
+        // Sort orders manually by creation date
+        orders.sort((a, b) {
+          final aData = a.data() as Map<String, dynamic>;
+          final bData = b.data() as Map<String, dynamic>;
+          final aCreated = aData['createdAt'] as Timestamp;
+          final bCreated = bData['createdAt'] as Timestamp;
+          return bCreated.compareTo(aCreated);
+        });
+
+        return ListView.builder(
+          padding: const EdgeInsets.all(16),
+          itemCount: orders.length,
+          itemBuilder: (context, index) {
+            final order = orders[index];
+            final data = order.data() as Map<String, dynamic>;
+            final items = data['items'] as List<dynamic>;
+            final total = data['total']?.toDouble() ?? 0.0;
+            final createdAt = data['createdAt'] as Timestamp;
+            final createdTime = createdAt.toDate();
+
+            return Card(
+              margin: const EdgeInsets.only(bottom: 16),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      "Order #${order.id.substring(0, 8)}",
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      "Date: ${createdTime.toString().substring(0, 10)}",
+                      style: TextStyle(color: Colors.grey[600]),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      "Total: \$${total.toStringAsFixed(2)}",
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      "Items: ${items.length}",
+                      style: TextStyle(color: Colors.grey[600]),
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      "Status: Completed",
+                      style: TextStyle(
+                        color: Colors.green,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildCancelledOrders(String userId) {
+    return StreamBuilder<QuerySnapshot>(
+      stream:
+          FirebaseFirestore.instance
+              .collection('orders')
+              .where('userId', isEqualTo: userId)
+              .where('status', isEqualTo: 'cancelled')
+              .snapshots(),
+      builder: (context, snapshot) {
+        if (snapshot.hasError) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.error_outline, size: 50, color: Colors.red),
+                const SizedBox(height: 20),
+                const Text(
+                  'Failed to load orders',
+                  style: TextStyle(fontSize: 18, color: Colors.grey),
+                ),
+              ],
+            ),
+          );
+        }
+
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(
+            child: CircularProgressIndicator(
+              valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF00D09E)),
+            ),
+          );
+        }
+
+        final orders = snapshot.data?.docs ?? [];
+
+        if (orders.isEmpty) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.cancel_outlined,
+                  size: 80,
+                  color: Colors.teal.shade200,
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  "No cancelled orders",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.grey,
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+
+        // Sort orders manually by creation date
+        orders.sort((a, b) {
+          final aData = a.data() as Map<String, dynamic>;
+          final bData = b.data() as Map<String, dynamic>;
+          final aCreated = aData['createdAt'] as Timestamp;
+          final bCreated = bData['createdAt'] as Timestamp;
+          return bCreated.compareTo(aCreated);
+        });
+
+        return ListView.builder(
+          padding: const EdgeInsets.all(16),
+          itemCount: orders.length,
+          itemBuilder: (context, index) {
+            final order = orders[index];
+            final data = order.data() as Map<String, dynamic>;
+            final items = data['items'] as List<dynamic>;
+            final total = data['total']?.toDouble() ?? 0.0;
+            final createdAt = data['createdAt'] as Timestamp;
+            final createdTime = createdAt.toDate();
+
+            return Card(
+              margin: const EdgeInsets.only(bottom: 16),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      "Order #${order.id.substring(0, 8)}",
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      "Date: ${createdTime.toString().substring(0, 10)}",
+                      style: TextStyle(color: Colors.grey[600]),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      "Total: \$${total.toStringAsFixed(2)}",
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      "Items: ${items.length}",
+                      style: TextStyle(color: Colors.grey[600]),
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      "Status: Cancelled",
+                      style: TextStyle(
+                        color: Colors.red,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
     );
   }
 }

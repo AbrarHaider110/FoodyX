@@ -1,4 +1,5 @@
 import 'package:FoodyX/Screens/BottomBarnavigation.dart';
+import 'package:FoodyX/Screens/my_orders.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -44,7 +45,7 @@ class _OrderConfirmedScreenState extends State<OrderConfirmedScreen>
       if (mounted) {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const bottomBarScreen()),
+          MaterialPageRoute(builder: (context) => const MyOrdersScreen()),
         );
       }
     });
@@ -122,7 +123,7 @@ class _OrderConfirmedScreenState extends State<OrderConfirmedScreen>
                     ),
                     const SizedBox(height: 20),
                     Text(
-                      'Delivery by $deliveryTime (PKT)',
+                      'Delivery by $deliveryTime',
                       style: const TextStyle(fontSize: 16, color: Colors.white),
                     ),
                   ],

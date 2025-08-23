@@ -13,7 +13,7 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  bool isLoading = false;
+  bool isLoading = true; // Start with true to show loading initially
   File? profileImage;
   String? imageUrl;
   final userId = FirebaseAuth.instance.currentUser?.uid;
@@ -23,22 +23,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
     'contact': '',
     'email': '',
   };
-  final Map<String, TextEditingController> _controllers = {};
 
   @override
   void initState() {
     super.initState();
-    _initializeControllers();
     if (userId != null) {
       _fetchUserProfile();
+    } else {
+      setState(() => isLoading = false);
     }
-  }
-
-  void _initializeControllers() {
-    _controllers['fullName'] = TextEditingController();
-    _controllers['userName'] = TextEditingController();
-    _controllers['contact'] = TextEditingController();
-    _controllers['email'] = TextEditingController();
   }
 
   Future<void> _fetchUserProfile() async {
@@ -57,16 +50,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
         if (userDoc.exists) {
           setState(() {
             userData = userDoc.data() as Map<String, dynamic>;
-            _updateControllers();
           });
+        } else {
+          await _createUserDocument();
         }
 
+        // Try to get profile image
         try {
           final ref = FirebaseStorage.instance.ref().child(
             'profileImages/$userId.jpg',
           );
           imageUrl = await ref.getDownloadURL();
-          setState(() {}); // refresh image
         } catch (_) {
           imageUrl = null;
         }
@@ -79,9 +73,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             SnackBar(content: Text('Error loading profile: ${e.toString()}')),
           );
         } else {
-          await Future.delayed(
-            Duration(seconds: 2 * attempt),
-          ); // exponential backoff
+          await Future.delayed(Duration(seconds: 2 * attempt));
         }
       } finally {
         setState(() => isLoading = false);
@@ -89,12 +81,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-  void _updateControllers() {
-    _controllers['fullName']?.text = userData['fullName'] ?? '';
-    _controllers['userName']?.text = userData['userName'] ?? '';
-    _controllers['contact']?.text = userData['contact'] ?? '';
-    _controllers['email']?.text =
-        userData['email'] ?? FirebaseAuth.instance.currentUser?.email ?? '';
+  Future<void> _createUserDocument() async {
+    if (userId == null) return;
+
+    final user = FirebaseAuth.instance.currentUser;
+    final newUserData = {
+      'fullName': user?.displayName ?? '',
+      'userName': '',
+      'contact': '',
+      'email': user?.email ?? '',
+      'createdAt': FieldValue.serverTimestamp(),
+      'updatedAt': FieldValue.serverTimestamp(),
+    };
+
+    await FirebaseFirestore.instance
+        .collection('users')
+        .doc(userId)
+        .set(newUserData);
+
+    setState(() {
+      userData = newUserData;
+    });
   }
 
   Future<void> _pickImage(ImageSource source) async {
@@ -124,44 +131,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
           {'profileImage': imageUrl},
         );
 
-        break; // success
+        break;
       } catch (e) {
         attempt++;
         if (attempt >= maxRetries) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('Image upload failed: ${e.toString()}')),
-          );
-        } else {
-          await Future.delayed(Duration(seconds: 2 * attempt));
-        }
-      } finally {
-        setState(() => isLoading = false);
-      }
-    }
-  }
-
-  Future<void> _updateField(String field) async {
-    if (userId == null) return;
-    final newValue = _controllers[field]?.text.trim() ?? '';
-    if (newValue.isEmpty) return;
-
-    setState(() => isLoading = true);
-    const maxRetries = 3;
-    int attempt = 0;
-
-    while (attempt < maxRetries) {
-      try {
-        await FirebaseFirestore.instance.collection('users').doc(userId).update(
-          {field: newValue, 'updatedAt': FieldValue.serverTimestamp()},
-        );
-
-        setState(() => userData[field] = newValue);
-        break; // success
-      } catch (e) {
-        attempt++;
-        if (attempt >= maxRetries) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Update failed: ${e.toString()}')),
           );
         } else {
           await Future.delayed(Duration(seconds: 2 * attempt));
@@ -182,14 +157,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context, false),
-                child: const Text('No', style: TextStyle(color: Colors.white)),
+                child: const Text('Cancel'),
               ),
               ElevatedButton(
                 onPressed: () => Navigator.pop(context, true),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF00D09E),
                 ),
-                child: const Text('Yes', style: TextStyle(color: Colors.white)),
+                child: const Text('Logout'),
               ),
             ],
           ),
@@ -203,48 +178,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-  @override
-  void dispose() {
-    for (var controller in _controllers.values) {
-      controller.dispose();
-    }
-    super.dispose();
-  }
-
-  Widget _buildEditableField(String label, String field) {
+  Widget _buildInfoRow(String label, String value) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Row(
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  label,
-                  style: const TextStyle(color: Colors.grey, fontSize: 14),
-                ),
-                TextField(
-                  controller: _controllers[field],
-                  decoration: const InputDecoration(
-                    border: InputBorder.none,
-                    isDense: true,
-                    contentPadding: EdgeInsets.zero,
-                  ),
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                  ),
-                  onSubmitted: (_) => _updateField(field),
-                ),
-                const Divider(height: 20, thickness: 1),
-              ],
+          Text(
+            label,
+            style: const TextStyle(
+              color: Colors.grey,
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
             ),
           ),
-          IconButton(
-            icon: const Icon(Icons.edit, color: Color(0xFF00D09E), size: 20),
-            onPressed: () => _updateField(field),
+          const SizedBox(height: 4),
+          Text(
+            value.isNotEmpty ? value : 'Not set',
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
           ),
+          const Divider(height: 24, thickness: 1),
         ],
       ),
     );
@@ -318,6 +271,41 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                               ? Image.network(
                                                 imageUrl!,
                                                 fit: BoxFit.cover,
+                                                loadingBuilder: (
+                                                  BuildContext context,
+                                                  Widget child,
+                                                  ImageChunkEvent?
+                                                  loadingProgress,
+                                                ) {
+                                                  if (loadingProgress == null)
+                                                    return child;
+                                                  return Center(
+                                                    child: CircularProgressIndicator(
+                                                      value:
+                                                          loadingProgress
+                                                                      .expectedTotalBytes !=
+                                                                  null
+                                                              ? loadingProgress
+                                                                      .cumulativeBytesLoaded /
+                                                                  loadingProgress
+                                                                      .expectedTotalBytes!
+                                                              : null,
+                                                    ),
+                                                  );
+                                                },
+                                                errorBuilder: (
+                                                  BuildContext context,
+                                                  Object error,
+                                                  StackTrace? stackTrace,
+                                                ) {
+                                                  return Icon(
+                                                    Icons.person,
+                                                    size: size.width * 0.3,
+                                                    color: const Color(
+                                                      0xFF00D09E,
+                                                    ),
+                                                  );
+                                                },
                                               )
                                               : Icon(
                                                 Icons.person,
@@ -353,10 +341,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 ],
                               ),
                               const SizedBox(height: 24),
-                              _buildEditableField("Full Name", 'fullName'),
-                              _buildEditableField("Username", 'userName'),
-                              _buildEditableField("Contact", 'contact'),
-                              _buildEditableField("Email", 'email'),
+                              _buildInfoRow(
+                                "Full Name",
+                                userData['fullName'] ?? '',
+                              ),
+                              _buildInfoRow(
+                                "Username",
+                                userData['userName'] ?? '',
+                              ),
+                              _buildInfoRow(
+                                "Contact",
+                                userData['contact'] ?? '',
+                              ),
+                              _buildInfoRow("Email", userData['email'] ?? ''),
                               SizedBox(height: size.height * 0.04),
                               SizedBox(
                                 width: double.infinity,

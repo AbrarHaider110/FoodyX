@@ -229,19 +229,6 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
 
                         SizedBox(height: screenSize.height * 0.02),
-                        const Center(child: Text("Or sign up with")),
-                        SizedBox(height: screenSize.height * 0.01),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            _buildSocialIconIcon(Icons.mail),
-                            SizedBox(width: screenSize.width * 0.05),
-                            _buildSocialIconIcon(Icons.facebook),
-                            SizedBox(width: screenSize.width * 0.05),
-                            _buildSocialIconIcon(Icons.fingerprint),
-                          ],
-                        ),
-                        SizedBox(height: screenSize.height * 0.02),
                         Center(
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
@@ -274,17 +261,6 @@ class _LoginScreenState extends State<LoginScreen> {
           ],
         ),
       ),
-    );
-  }
-
-  Widget _buildSocialIconIcon(IconData icon) {
-    return Container(
-      padding: const EdgeInsets.all(5),
-      decoration: BoxDecoration(
-        color: const Color(0xFFDFF7E2),
-        borderRadius: BorderRadius.circular(15),
-      ),
-      child: Icon(icon, color: const Color(0xFF00D09E)),
     );
   }
 }

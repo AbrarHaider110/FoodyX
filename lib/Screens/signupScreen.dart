@@ -129,7 +129,6 @@ class _signUpScreenState extends State<signUpScreen> {
                                           .doc(uid)
                                           .set({
                                             'fullName': name,
-                                            'userName': '',
                                             'contact': mobile,
                                             'dob': dob,
                                             'email': email,

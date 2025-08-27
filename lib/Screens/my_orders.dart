@@ -379,30 +379,19 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
 
                   final quantity = (data['quantity'] as num?)?.toInt() ?? 1;
                   final itemTotal = price * quantity;
-                  final imageUrl = data['imageUrl'] as String?;
 
                   return Card(
                     margin: const EdgeInsets.only(bottom: 16),
                     child: ListTile(
-                      leading:
-                          imageUrl != null && imageUrl.isNotEmpty
-                              ? Container(
-                                width: 50,
-                                height: 50,
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(8),
-                                  image: DecorationImage(
-                                    image: NetworkImage(imageUrl),
-                                    fit: BoxFit.cover,
-                                  ),
-                                ),
-                              )
-                              : Container(
-                                width: 50,
-                                height: 50,
-                                color: Colors.grey[200],
-                                child: const Icon(Icons.fastfood),
-                              ),
+                      leading: Container(
+                        width: 50,
+                        height: 50,
+                        decoration: BoxDecoration(
+                          color: Colors.grey[200],
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Icon(Icons.fastfood, color: Colors.grey[500]),
+                      ),
                       title: Text(data['title'] ?? 'Unknown Item'),
                       subtitle: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,

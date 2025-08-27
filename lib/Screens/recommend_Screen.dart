@@ -13,7 +13,7 @@ class RecommendScreen extends StatelessWidget {
         'title': "Chocolate and Fresh Fruit Crepes",
         'subtitle': "Fresh Chocolate Crepes",
         'rating': "5.0",
-        'id': "crepes_001", // Added product ID
+        'id': "crepes_001",
       },
       {
         'image': "assets/R2.png",
@@ -21,7 +21,7 @@ class RecommendScreen extends StatelessWidget {
         'title': "Bean and Vegetable Burger",
         'subtitle': "Vegetable burger Mixed with bean",
         'rating': "4.8",
-        'id': "burger_002", // Added product ID
+        'id': "burger_002",
       },
       {
         'image': "assets/R3.png",

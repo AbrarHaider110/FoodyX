@@ -13,13 +13,13 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  bool isLoading = true; // Start with true to show loading initially
+  bool isLoading = true;
   File? profileImage;
   String? imageUrl;
   final userId = FirebaseAuth.instance.currentUser?.uid;
   Map<String, dynamic> userData = {
     'fullName': '',
-    'userName': '',
+    'dob': '',
     'contact': '',
     'email': '',
   };
@@ -55,7 +55,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
           await _createUserDocument();
         }
 
-        // Try to get profile image
         try {
           final ref = FirebaseStorage.instance.ref().child(
             'profileImages/$userId.jpg',
@@ -65,7 +64,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           imageUrl = null;
         }
 
-        break; // success
+        break;
       } catch (e) {
         attempt++;
         if (attempt >= maxRetries) {
@@ -87,7 +86,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final user = FirebaseAuth.instance.currentUser;
     final newUserData = {
       'fullName': user?.displayName ?? '',
-      'userName': '',
+      'dob': '',
       'contact': '',
       'email': user?.email ?? '',
       'createdAt': FieldValue.serverTimestamp(),
@@ -346,8 +345,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 userData['fullName'] ?? '',
                               ),
                               _buildInfoRow(
-                                "Username",
-                                userData['userName'] ?? '',
+                                "Date of Birth",
+                                userData['dob'] ?? '',
                               ),
                               _buildInfoRow(
                                 "Contact",

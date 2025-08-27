@@ -128,11 +128,13 @@ class _signUpScreenState extends State<signUpScreen> {
                                           .collection('users')
                                           .doc(uid)
                                           .set({
-                                            'name': name,
-                                            'email': email,
-                                            'mobile': mobile,
+                                            'fullName': name,
+                                            'userName': '',
+                                            'contact': mobile,
                                             'dob': dob,
+                                            'email': email,
                                             'createdAt': Timestamp.now(),
+                                            'updatedAt': Timestamp.now(),
                                           });
 
                                       if (context.mounted) {

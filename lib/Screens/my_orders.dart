@@ -273,8 +273,6 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
               const SizedBox(height: 16),
               ElevatedButton(
                 onPressed: () {
-                  // You might want to use url_launcher package to open the URL
-                  // For now, just show the URL
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(content: Text('Index URL: $_indexUrl')),
                   );
@@ -370,17 +368,15 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
                 itemBuilder: (context, index) {
                   final item = cartItems[index];
                   final data = item.data() as Map<String, dynamic>;
+
                   final price =
                       data['price'] is String
                           ? double.tryParse(
-                                data['price'].replaceAll(
-                                      RegExp(r'[^\d.]'),
-                                      '',
-                                    ) ??
-                                    '0.0',
+                                data['price'].replaceAll(RegExp(r'[^\d.]'), ''),
                               ) ??
                               0.0
                           : (data['price']?.toDouble() ?? 0.0);
+
                   final quantity = (data['quantity'] as num?)?.toInt() ?? 1;
                   final itemTotal = price * quantity;
                   final imageUrl = data['imageUrl'] as String?;
@@ -518,10 +514,8 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
               .snapshots(),
       builder: (context, snapshot) {
         if (snapshot.hasError) {
-          // Check if this is an index error
           final error = snapshot.error.toString();
           if (error.contains('index') || error.contains('indexes')) {
-            // Extract the URL from the error message if available
             final regex = RegExp(
               r'https://console\.firebase\.google\.com[^\s]+',
             );
@@ -776,7 +770,6 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
           );
         }
 
-        // Sort orders manually by creation date
         orders.sort((a, b) {
           final aData = a.data() as Map<String, dynamic>;
           final bData = b.data() as Map<String, dynamic>;
@@ -906,7 +899,6 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
           );
         }
 
-        // Sort orders manually by creation date
         orders.sort((a, b) {
           final aData = a.data() as Map<String, dynamic>;
           final bData = b.data() as Map<String, dynamic>;
